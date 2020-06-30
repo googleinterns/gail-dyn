@@ -57,14 +57,14 @@ def test(args):
 def main():
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', help='environment ID', default='HumanoidSwimmerEnv-v1')
+    parser.add_argument('--env', help='environment ID', default='HopperURDFEnv-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=222)
     parser.add_argument('--render', help='OpenGL Visualizer', type=int, default=1)
     parser.add_argument('--resetbenchmark',
                         help='Repeat reset to show reset performance',
                         type=int,
                         default=0)
-    parser.add_argument('--steps', help='Number of steps', type=int, default=240)  # large enough
+    parser.add_argument('--steps', help='Number of steps', type=int, default=500)  # large enough
 
     args = parser.parse_args()
     test(args)

@@ -12,7 +12,7 @@ p.connect(p.GUI)
 # obUids = p.loadMJCF("mjcf/humanoid.xml")
 # humanoid = obUids[1]
 
-urdf_ID = p.loadURDF(os.path.join(currentdir, "assets/hopper_my.urdf"),
+urdf_ID = p.loadURDF(os.path.join(currentdir, "assets/hopper_my_box.urdf"),
                      [0, 0, 1.5],
                      p.getQuaternionFromEuler([0.0, 0.0, 0.0]),
                      useFixedBase=1)

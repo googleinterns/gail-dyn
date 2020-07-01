@@ -1,0 +1,66 @@
+run Bullet training:
+
+See readme.txt for conda env
+
+run Dart:
+
+Create one single docker for bullet,dart,pytorch
+Using one single urdf file hopper (box/mesh capsule)
+use PyCharm with docker interpreter mainly for API completion
+run python (with GUI) still in container
+
+docker run --gpus=all -ti --rm -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/tmp/bullet-dart:/root/bullet-dart pydart2-docker:v0 /bin/bash
+cd baselines
+pip3 install -e .
+cd ..
+
+Hopper:
+1. torque control
+2. ts = 1/500s
+3. bullet default dampings?
+4. collsion detector
+5. solver iter
+6. floating dofs no damping
+7. gravity
+
+
+Misc:
+https://github.com/iory/mjcf2urdf
+https://docs.docker.com/engine/install/linux-postinstall/
+add user to docker group
+https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#run
+https://youtrack.jetbrains.com/issue/PY-33489?_ga=2.16363125.2125752459.1593460896-148870692.1593460896
+* Add more constraint force to root
+
+To match model files:
+1. com & link pos & quat at 0,0,0,0
+2. com & link pos & quat at random q
+3. damping/friction
+4. joint limit
+5. mass values / moment of inertia
+6. capsule shapes
+
+
+
+2->3/4
+0.04 vel pen to 0.02 vel pen
+python main.py --env-name "HopperURDFEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8
+  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95
+  --num-env-steps 4000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.2 --save-dir trained_models_hopper_bullet_4 --seed 10044
+
+
+bullet issue:
+TODO
+
+added noise;
+turned off state normalize
+
+joint limit force
+constraint root force
+contact force
+
+
+DART:
+very easy to crash when contact
+joint limit
+mesh/primitive

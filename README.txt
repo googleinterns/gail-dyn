@@ -16,7 +16,8 @@ pip install -r requirements.txt
 
 5. Install pytorch (should work with or without cuda):
 
-conda install pytorch -c soumith
+#conda install pytorch -c soumith
+conda install pytorch cudatoolkit=10.2 -c pytorch
 
 6. go to "baselines" subdirectory: 
 
@@ -35,3 +36,4 @@ python main.py --env-name "HumanoidSwimmerEnv-v1" --algo ppo --use-gae --log-int
 11. After finishing the project, to deactivate an active environment, use:
 
 conda deactivate
+# conda env remove -n ENV_NAME

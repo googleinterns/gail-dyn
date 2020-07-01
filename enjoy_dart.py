@@ -106,17 +106,17 @@ env = make_vec_envs(
     None,
     device=device,
     allow_early_resets=False,
-    **extra_dict,
 )
 # dont know why there are so many wrappers in make_vec_envs...
 env_core = env.venv.venv.envs[0].env.env
 
+env_name_transfer = "HopperURDFEnv-v1"
 if args.iter >= 0:
     path = os.path.join(
         args.load_dir, args.env_name + "_" + str(args.iter) + ".pt"
     )
 else:
-    path = os.path.join(args.load_dir, args.env_name + ".pt")
+    path = os.path.join(args.load_dir, env_name_transfer + ".pt")
 
 if is_cuda:
     actor_critic, ob_rms = torch.load(path)
@@ -166,10 +166,13 @@ while True:
 
     # Obser reward and next obs
     obs, reward, done, _ = env.step(action)
-    last_dist = dist
-    dist = env_core.get_dist()
+
+    if extra_dict["render"]:
+        env.render()
 
     reward_total += reward
+    last_dist = dist
+    dist = env_core.get_dist()
 
     if done:
         print(
@@ -178,5 +181,6 @@ while True:
             f"x: {last_dist:.2f}\t"
         )
         reward_total = 0.0
+        input("press enter")
 
     masks.fill_(0.0 if done else 1.0)

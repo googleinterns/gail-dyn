@@ -125,6 +125,9 @@ class HopperURDFEnv(gym.Env):
 
         return self.get_extended_observation(), reward, not not_done, {}
 
+    def get_dist(self):
+        return self._p.getJointState(self.robot.hopper_id, 0)[0]
+
     def get_extended_observation(self):
         return self.robot.get_robot_observation()
 

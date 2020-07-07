@@ -1,9 +1,5 @@
 run Bullet training:
-
-See readme.txt for conda env
-
 run Dart:
-
 Create one single docker for bullet,dart,pytorch
 Using one single urdf file hopper (box/mesh capsule)
 use PyCharm with docker interpreter mainly for API completion
@@ -25,7 +21,7 @@ Hopper:
 
 
 Misc:
-https://github.com/iory/mjcf2urdf
+https://github.com/iory/mjcf2urdf not very good...
 https://docs.docker.com/engine/install/linux-postinstall/
 add user to docker group
 https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#run
@@ -41,17 +37,6 @@ To match model files:
 6. capsule shapes
 
 
-
-2->3/4
-0.04 vel pen to 0.02 vel pen
-python main.py --env-name "HopperURDFEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8
-  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95
-  --num-env-steps 4000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.2 --save-dir trained_models_hopper_bullet_4 --seed 10044
-
-
-bullet issue:
-TODO
-
 added noise;
 turned off state normalize
 
@@ -59,8 +44,20 @@ joint limit force
 constraint root force
 contact force
 
+bullet issue:
+TODO
+DART issue:
+TODO
 
-DART:
-very easy to crash when contact
-joint limit
-mesh/primitive
+Change box to capsule in Dart will not transfer
+BUT, will work if change in Bullet... (2.5/3 policies)
+Seems that only failed because get stuck in places where DART has some issue solving for capsules
+Try mujoco??
+
+lower friction
+
+Unmatched aspects between dart and bullet:
+1. bullet default numerical damping/ joint friction
+2. moment of inertia (dart uses default calced from shape)
+3. restitution...
+

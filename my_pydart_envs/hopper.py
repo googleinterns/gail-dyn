@@ -13,6 +13,13 @@ class DartHopperEnv(dart_env.DartEnv, utils.EzPickle):
 
         utils.EzPickle.__init__(self)
 
+        # https://github.com/dartsim/dart/blob/v6.3.0/dart/constraint/ContactConstraint.cpp
+        for i in range(0, len(self.dart_world.skeletons[0].bodynodes)):
+            self.dart_world.skeletons[0].bodynodes[i].set_friction_coeff(1.0)
+            self.dart_world.skeletons[0].bodynodes[i].set_restitution_coeff(0.0)
+        for i in range(0, len(self.dart_world.skeletons[1].bodynodes)):
+            self.dart_world.skeletons[1].bodynodes[i].set_friction_coeff(1.0)
+            self.dart_world.skeletons[1].bodynodes[i].set_restitution_coeff(0.0)
 
     def advance(self, a):
         clamped_control = np.array(a)

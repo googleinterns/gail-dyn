@@ -64,11 +64,17 @@ class HopperURDFEnv(gym.Env):
         self.timer = 0
 
         self._p.setPhysicsEngineParameter(numSolverIterations=100)
+        # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
         self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0, restitution=0.2)     # TODO
+        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)     # TODO
+        self._p.changeDynamics(self.floor_id, -1, restitution=.2)
 
         self.robot.reset(self._p)
+        # # should be after reset!
+        # for ind in range(self.robot.n_total_dofs):
+        #     self._p.changeDynamics(self.robot.hopper_id, ind, lateralFriction=1.0)
+        #     self._p.changeDynamics(self.robot.hopper_id, ind, restitution=.2)
 
         # self._p.configureDebugVisualizer(pybullet.COV_ENABLE_PLANAR_REFLECTION, i)
 
@@ -140,3 +146,9 @@ class HopperURDFEnv(gym.Env):
         s = inspect.getsource(type(self))
         s = s + inspect.getsource(type(self.robot))
         return s
+
+    def cam_track_torso_link(self):
+        distance = 5
+        yaw = 0
+        torso_x = self._p.getLinkState(self.robot.hopper_id, 2, computeForwardKinematics=1)[0]
+        self._p.resetDebugVisualizerCamera(distance, yaw, -20, torso_x)

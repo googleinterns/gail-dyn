@@ -11,7 +11,7 @@ import torch
 import gym
 import my_pybullet_envs
 
-import my_pydart_envs
+# import my_pydart_envs
 
 import pickle
 
@@ -145,13 +145,6 @@ obs = env.reset()
 # input("reset, press enter")
 done = False
 
-if args.env_name.find("Bullet") > -1:
-    import pybullet as p
-
-    torsoId = -1
-    for i in range(p.getNumBodies()):
-        if p.getBodyInfo(i)[0].decode() == "torso":
-            torsoId = i
 
 reward_total = 0
 
@@ -178,5 +171,11 @@ while True:
             f"x: {last_dist:.2f}\t"
         )
         reward_total = 0.0
+
+    try:
+        env_core.cam_track_torso_link()
+        # print("aaa")
+    except:
+        print("not bullet env")
 
     masks.fill_(0.0 if done else 1.0)

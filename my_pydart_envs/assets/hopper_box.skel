@@ -146,6 +146,10 @@
                         <box>
                             <size>0.12 0.12 0.5</size>
                         </box>
+<!--                        <capsule>-->
+<!--                            <height>0.45</height>-->
+<!--                            <radius>0.06</radius>-->
+<!--                        </capsule>-->
                     </geometry>
                     <color>1.0 0.5 0.0</color>
                 </visualization_shape>
@@ -155,6 +159,10 @@
                         <box>
                             <size>0.12 0.12 0.5</size>
                         </box>
+<!--                        <capsule>-->
+<!--                            <height>0.45</height>-->
+<!--                            <radius>0.06</radius>-->
+<!--                        </capsule>-->
                     </geometry>
                 </collision_shape>
             </body>

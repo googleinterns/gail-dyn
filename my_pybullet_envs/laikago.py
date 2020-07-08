@@ -202,16 +202,17 @@ class LaikagoBullet:
         # root q (without root x)
         # y could be unbounded
         root_pos, root_orn = self.get_link_com_xyz_orn(-1)
-        root_x = root_pos[0]
+        root_x, root_y, root_z = root_pos
         obs.extend(root_pos[1:])
         obs.extend(root_orn)
 
-        # feet (offset by root x)
-        # y could be unbounded
+        # feet (offset by root)
         for link in self.feet:
             pos, _ = self.get_link_com_xyz_orn(link, FK=1)
             # print(pos)
             pos[0] -= root_x
+            pos[1] -= root_y
+            pos[2] -= root_z
             obs.extend(pos)
 
         # non-root joint q/dq

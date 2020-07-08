@@ -113,9 +113,10 @@ class LaikagoBulletEnv(gym.Env):
         x_1 = root_pos[0]
 
         not_done = True
-        reward = 1.0        # alive bonus
-        reward += (x_1 - x_0) / (self.control_skip * self._ts) * 2.0
-        # print("v", (x_1 - x_0) / (self.control_skip * self._ts) * 2.0)
+        reward = 0.0        # alive bonus
+        tar = np.minimum(self.timer / 500, 1.5)
+        reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
+        # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
         reward += -0.05 * np.square(a).sum()
         # print("act norm", -0.05 * np.square(a).sum())
 
@@ -123,17 +124,18 @@ class LaikagoBulletEnv(gym.Env):
         pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
         q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
         joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
-        reward += -0.2 * joints_at_limit
-        # print("jl", -0.2 * joints_at_limit)
+        reward += -0.5 * joints_at_limit
+        # print("jl", -0.5 * joints_at_limit)
 
         reward += -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0)  # almost like /23
+        # print(np.abs(dq))
         # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
 
         y_1 = root_pos[1]
         reward += -y_1 * 0.5
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
-        reward += np.minimum(height-0.3, 0.2) * 8
+        reward += np.minimum(height-0.3, 0.2) * 12
 
         in_support = self.robot.is_root_com_in_support()
 
@@ -186,7 +188,7 @@ class LaikagoBulletEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 5
+        distance = 3
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
-        self._p.resetDebugVisualizerCamera(distance, yaw, -20, root_pos[0])
+        self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

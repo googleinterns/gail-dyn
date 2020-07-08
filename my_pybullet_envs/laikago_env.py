@@ -26,7 +26,8 @@ class LaikagoBulletEnv(gym.Env):
                  max_tar_vel=2.5,
                  energy_weight=0.05,
                  jl_weight=0.5,
-                 ab=0
+                 ab=0,
+                 q_pen_weight=0.3
 
                  ):
 
@@ -41,6 +42,7 @@ class LaikagoBulletEnv(gym.Env):
         self.energy_weight = energy_weight
         self.jl_weight = jl_weight
         self.ab = ab
+        self.q_pen_weight = q_pen_weight
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -117,7 +119,7 @@ class LaikagoBulletEnv(gym.Env):
                 self.robot.apply_action(a)
             self._p.stepSimulation()
             if self.render:
-                time.sleep(self._ts * 0.5)
+                time.sleep(self._ts * 1.5)
             self.timer += 1
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
@@ -138,9 +140,12 @@ class LaikagoBulletEnv(gym.Env):
         reward += -self.jl_weight * joints_at_limit
         # print("jl", -self.jl_weight * joints_at_limit)
 
-        reward += -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0)  # almost like /23
+        reward += -np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
+        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)  # almost like /23
         # print(np.abs(dq))
         # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
+        # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+        # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
 
         y_1 = root_pos[1]
         reward += -y_1 * 0.5

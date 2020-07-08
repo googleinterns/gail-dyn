@@ -63,3 +63,47 @@ python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-inter
   --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
    --clip-param 0.2 --save-dir trained_models_laika_bullet_11 --seed 20011 --act_noise 1 --obs_noise 1 \
    --max_tar_vel 2.0 --ab 1.0
+
+# 0.3 q pen weight
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_12 --seed 20012 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.0 --ab 2.0 --q_pen_weight 0.3
+
+# 0.5 q pen weight (squared)
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_13 --seed 20013 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.5 --ab 2.0 --q_pen_weight 0.5
+
+# energy 0.05->0.1 --ab 2.5 --q_pen_weight 0.4
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_14 --seed 20014 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.5 --ab 2.5 --q_pen_weight 0.4  --energy_weight 0.1
+
+# vel pen 0.01
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_15 --seed 20015 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.5 --ab 2.0 --q_pen_weight 0.5  --energy_weight 0.1
+
+# good ones: 15, 12, 4
+
+# vel pen 0.03 back
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_16 --seed 20016 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.5 --ab 2.0 --q_pen_weight 0.5  --energy_weight 0.1
+
+# vel pen 0.02
+   python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1500 \
+  --num-processes 8  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 \
+  --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
+   --clip-param 0.2 --save-dir trained_models_laika_bullet_17 --seed 20017 --act_noise 1 --obs_noise 1 \
+   --max_tar_vel 2.5 --ab 2.0 --q_pen_weight 0.5  --energy_weight 0.1

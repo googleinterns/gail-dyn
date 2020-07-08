@@ -112,12 +112,12 @@
             <material name="white"/>
         </visual>
 
-<!--        <collision>-->
-<!--            <origin rpy="0 1.57079 0" xyz="0 0.0 0"/>-->
-<!--            <geometry>-->
-<!--                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>-->
-<!--            </geometry>-->
-<!--        </collision>-->
+        <collision>
+            <origin rpy="0 1.57079 0" xyz="0 0.0 0"/>
+            <geometry>
+                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>
+            </geometry>
+        </collision>
     </link>
     <joint name="FR_lower_leg_2_upper_leg_joint" type="revolute">
         <axis xyz="1 0 0"/>
@@ -223,12 +223,12 @@
             </material>
         </visual>
 
-<!--        <collision>-->
-<!--            <origin rpy="0 1.57079 0" xyz="0 0 0"/>-->
-<!--            <geometry>-->
-<!--                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>-->
-<!--            </geometry>-->
-<!--        </collision>-->
+        <collision>
+            <origin rpy="0 1.57079 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>
+            </geometry>
+        </collision>
 
     </link>
 
@@ -330,12 +330,12 @@
             <material name="white"/>
         </visual>
 
-<!--        <collision>-->
-<!--            <origin rpy="0 1.57079 0" xyz="0 0 0"/>-->
-<!--            <geometry>-->
-<!--                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>-->
-<!--            </geometry>-->
-<!--        </collision>-->
+        <collision>
+            <origin rpy="0 1.57079 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>
+            </geometry>
+        </collision>
 
     </link>
 
@@ -439,12 +439,12 @@
             <material name="white"/>
         </visual>
 
-<!--        <collision>-->
-<!--            <origin rpy="0 1.57079 0" xyz="0 0 0"/>-->
-<!--            <geometry>-->
-<!--                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>-->
-<!--            </geometry>-->
-<!--        </collision>-->
+        <collision>
+            <origin rpy="0 1.57079 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="lower_leg_3.stl" scale="1 1 1"/>
+            </geometry>
+        </collision>
 
     </link>
 

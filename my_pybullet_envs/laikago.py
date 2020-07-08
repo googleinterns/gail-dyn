@@ -160,9 +160,9 @@ class LaikagoBullet:
 
         self.torque = act * self.max_forces
 
-        # # 10% white noise
-        # if self.act_noise:
-        #     self.torque = self.perturb(self.torque, np.array(self.max_forces)/10.0)
+        # 10% white noise
+        if self.act_noise:
+            self.torque = self.perturb(self.torque, np.array(self.max_forces)/10.0)
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.go_id,
@@ -220,8 +220,8 @@ class LaikagoBullet:
         obs.extend(list(q))
         obs.extend(list(np.clip(dq / 10.0, -2, 2)))
 
-        # if self.obs_noise:
-        #     obs = self.perturb(obs, 0.1)
+        if self.obs_noise:
+            obs = self.perturb(obs, 0.1)
 
         # print(np.array(obs))
         return list(obs)

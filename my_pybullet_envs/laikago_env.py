@@ -21,7 +21,13 @@ class LaikagoBulletEnv(gym.Env):
                  act_noise=True,
                  obs_noise=True,
                  control_skip=10,
-                 using_torque_ctrl=True
+                 using_torque_ctrl=True,
+
+                 max_tar_vel=2.5,
+                 energy_weight=0.05,
+                 jl_weight=0.5,
+                 ab=0
+
                  ):
 
         self.render = render
@@ -30,6 +36,11 @@ class LaikagoBulletEnv(gym.Env):
         self.act_noise = act_noise
         self.control_skip = int(control_skip)
         self._ts = 1. / 500.
+
+        self.max_tar_vel = max_tar_vel
+        self.energy_weight = energy_weight
+        self.jl_weight = jl_weight
+        self.ab = ab
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -113,19 +124,19 @@ class LaikagoBulletEnv(gym.Env):
         x_1 = root_pos[0]
 
         not_done = True
-        reward = 0.0        # alive bonus
-        tar = np.minimum(self.timer / 500, 1.5)
+        reward = self.ab        # alive bonus
+        tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
         # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
-        reward += -0.05 * np.square(a).sum()
-        # print("act norm", -0.05 * np.square(a).sum())
+        reward += -self.energy_weight * np.square(a).sum()
+        # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
         pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
         q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
         joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
-        reward += -0.5 * joints_at_limit
-        # print("jl", -0.5 * joints_at_limit)
+        reward += -self.jl_weight * joints_at_limit
+        # print("jl", -self.jl_weight * joints_at_limit)
 
         reward += -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0)  # almost like /23
         # print(np.abs(dq))
@@ -156,7 +167,7 @@ class LaikagoBulletEnv(gym.Env):
         #         break
 
         # print("------")
-        not_done = (np.abs(dq) < 50).all() and in_support and (height > 0.3)
+        not_done = (np.abs(dq) < 90).all() and in_support and (height > 0.3)
 
         return self.get_extended_observation(), reward, not not_done, {}
 
@@ -172,6 +183,8 @@ class LaikagoBulletEnv(gym.Env):
                 obs.extend([1.0])
             else:
                 obs.extend([-1.0])
+
+        obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])   # TODO
 
         # print(obs)
         return obs

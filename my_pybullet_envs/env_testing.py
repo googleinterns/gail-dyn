@@ -46,8 +46,10 @@ def test(args):
             print(rewards)
             print("done")
             print(done)
-            print("timer")
-            print(env.timer)
+
+            if done:
+                input("press enter")
+                break
 
         input("press enter")
 
@@ -57,7 +59,7 @@ def test(args):
 def main():
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', help='environment ID', default='HopperURDFEnv-v1')
+    parser.add_argument('--env', help='environment ID', default='LaikagoBulletEnv-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=222)
     parser.add_argument('--render', help='OpenGL Visualizer', type=int, default=1)
     parser.add_argument('--resetbenchmark',

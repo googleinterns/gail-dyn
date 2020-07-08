@@ -61,3 +61,11 @@ Unmatched aspects between dart and bullet:
 2. moment of inertia (dart uses default calced from shape)
 3. restitution...
 
+
+Laikago:
+1. toe_limit
+2. Use inertia computed from shapes
+3/ increase alive bouns
+4. stop when torso hits rgound
+
+soft vs hard reset: what are people's habits?

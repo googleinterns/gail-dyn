@@ -52,6 +52,9 @@ class LaikagoBullet:
         self.feet = [3, 7, 11, 15]
 
         self.max_forces = [30.0] * 12       # joint torque limits    TODO
+
+        # self.max_forces = [30.0] * 6 + [20.0] * 6
+
         self.init_q = [0.0, 0.0, -0.5] * 4                          # TODO
         self.ctrl_dofs = []
 

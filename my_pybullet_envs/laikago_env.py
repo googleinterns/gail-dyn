@@ -86,14 +86,14 @@ class LaikagoBulletEnv(gym.Env):
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
             self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-            # self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)     # TODO
-            # self._p.changeDynamics(self.floor_id, -1, restitution=.2)
+            # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=300.0)     # TODO
+            # # self._p.changeDynamics(self.floor_id, -1, contactStiffness=3.0)
 
             self.robot.reset(self._p)
             # # should be after reset!
-            # for ind in range(self.robot.n_total_dofs):
-            #     self._p.changeDynamics(self.robot.go_id, ind, lateralFriction=1.0)
-            #     self._p.changeDynamics(self.robot.go_id, ind, restitution=.2)
+            # for ind in self.robot.feet:
+            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=100.0, contactStiffness=300.0)
+            #     # self._p.changeDynamics(self.robot.go_id, ind, contactStiffness=3.0)
 
         self._p.stepSimulation()
 
@@ -173,6 +173,7 @@ class LaikagoBulletEnv(gym.Env):
 
         # print("------")
         not_done = (np.abs(dq) < 90).all() and in_support and (height > 0.3)
+        # not_done = True
 
         return self.get_extended_observation(), reward, not not_done, {}
 

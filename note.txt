@@ -88,6 +88,8 @@ Nevertheless, rollout & store traj part remains the same.
 5. reward calc uses uncliped, unnoisy, unscaled obs/state
 what should the training data look like? (s_t, a_t, s_t1)
 probably should not be clipped.
-
 ground truth is noisy anyways
 ** just get rid of clipping for now, policies seem to transfer still...
+
+6. what about action clipping?
+just use clipped a_t in f_theta seems fine.

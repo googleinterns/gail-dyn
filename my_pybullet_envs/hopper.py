@@ -110,11 +110,10 @@ class HopperURDF:
                   self._p.getJointInfo(self.hopper_id, i)[12])
 
     def apply_action(self, a):
-        act = np.clip(a, -1.0, 1.0)
         if self.act_noise:
             self.torque = self.perturb(self.torque, 0.05)
 
-        self.torque = act * self.max_forces
+        self.torque = a * self.max_forces
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.hopper_id,

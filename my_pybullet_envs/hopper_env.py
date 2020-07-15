@@ -91,8 +91,8 @@ class HopperURDFEnv(gym.Env):
         for _ in range(self.control_skip):
             # action is in not -1,1
             if a is not None:
-                self.act = a
-                self.robot.apply_action(a)
+                self.act = np.clip(a, -1.0, 1.0)
+                self.robot.apply_action(self.act)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)

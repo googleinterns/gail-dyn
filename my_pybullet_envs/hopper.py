@@ -50,6 +50,9 @@ class HopperURDF:
         self.ll = None      # stores joint lower limits
         self.ul = None      # stores joint upper limits
 
+        self.last_x = None
+        self.x = None
+
     def reset(
              self,
              bullet_client
@@ -94,6 +97,10 @@ class HopperURDF:
     def perturb(self, arr, r=0.02):
         r = np.abs(r)
         return np.copy(np.array(arr) + self.np_random.uniform(low=-r, high=r, size=len(arr)))
+
+    def perturb_scalar(self, a, r=0.02):
+        r = np.abs(r)
+        return a + self.np_random.uniform(low=-r, high=r)
 
     def print_all_joints_info(self):
         for i in range(self._p.getNumJoints(self.hopper_id)):
@@ -146,6 +153,9 @@ class HopperURDF:
 
         return list(obs)
 
+    def update_x(self, reset=False):
+        self.last_x = None if reset else self.x
+        self.x = self._p.getJointState(self.hopper_id, 0)[0]
 
 # if __name__ == "__main__":
 #     import pybullet as p

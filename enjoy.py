@@ -111,12 +111,13 @@ env = make_vec_envs(
 # dont know why there are so many wrappers in make_vec_envs...
 env_core = env.venv.venv.envs[0].env.env
 
+env_name_transfer = "HopperURDFEnv-v1"
 if args.iter >= 0:
     path = os.path.join(
-        args.load_dir, args.env_name + "_" + str(args.iter) + ".pt"
+        args.load_dir, env_name_transfer + "_" + str(args.iter) + ".pt"
     )
 else:
-    path = os.path.join(args.load_dir, args.env_name + ".pt")
+    path = os.path.join(args.load_dir, env_name_transfer + ".pt")
 
 if is_cuda:
     actor_critic, ob_rms = torch.load(path)

@@ -69,3 +69,20 @@ Laikago:
 4. stop when torso hits rgound
 
 soft vs hard reset: what are people's habits?
+
+
+GAN-hopper:
+1. include both q and dq for now in s_t, though dq is not in model from Yuxiang
+2. Not including past info in s_t for now as well (no partial obs).
+
+
+Discriminator more likely to succeed when (s_t, ..., s_t+n) n becomes larger - should be a tunable param
+Nevertheless, rollout & store traj part remains the same.
+
+3. how to handle dx?
+    - just include last control step dx as part of state/obs?
+    - dx is actually already there...just not accurate
+
+4. probably when rolling out model, should not always start from beginning
+
+Seems that the loaded

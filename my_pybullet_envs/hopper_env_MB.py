@@ -12,7 +12,7 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-class HopperURDFEnv(gym.Env):
+class HopperURDFEnvMB(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
     def __init__(self,
@@ -21,7 +21,8 @@ class HopperURDFEnv(gym.Env):
                  act_noise=True,
                  obs_noise=True,
                  control_skip=10,
-                 using_torque_ctrl=True
+                 using_torque_ctrl=True,
+                 correct_obs_dx=True        # if need to correct dx obs
                  ):
 
         self.render = render
@@ -30,6 +31,7 @@ class HopperURDFEnv(gym.Env):
         self.act_noise = act_noise
         self.control_skip = int(control_skip)
         self._ts = 1. / 500.
+        self.correct_obs_dx = correct_obs_dx
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -48,12 +50,13 @@ class HopperURDFEnv(gym.Env):
 
         self.floor_id = None
 
-        obs = self.reset()    # and update init obs
+        self.obs = []
+        self.reset()    # and update init obs
 
         action_dim = len(self.robot.ctrl_dofs)
         self.act = [0.0] * len(self.robot.ctrl_dofs)
         self.action_space = gym.spaces.Box(low=np.array([-1.]*action_dim), high=np.array([+1.]*action_dim))
-        obs_dim = len(obs)
+        obs_dim = len(self.obs)
         obs_dummy = np.array([1.12234567]*obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
 
@@ -73,6 +76,7 @@ class HopperURDFEnv(gym.Env):
         # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=600.0)     # TODO
 
         self.robot.reset(self._p)
+        self.robot.update_x(reset=True)
         # # should be after reset!
         # for ind in range(self.robot.n_total_dofs):
         #     self._p.changeDynamics(self.robot.hopper_id, ind, contactDamping=100.0, contactStiffness=600.0)
@@ -84,13 +88,11 @@ class HopperURDFEnv(gym.Env):
 
         self._p.stepSimulation()
 
-        obs = self.get_extended_observation()
+        self.update_extended_observation()
 
-        return np.array(obs)
+        return self.obs
 
     def step(self, a):
-
-        x_0 = self._p.getJointState(self.robot.hopper_id, 0)[0]
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -102,11 +104,12 @@ class HopperURDFEnv(gym.Env):
                 time.sleep(self._ts * 0.5)
             self.timer += 1
 
-        x_1 = self._p.getJointState(self.robot.hopper_id, 0)[0]
+        self.robot.update_x()
+        self.update_extended_observation()
 
         reward = 2.0        # alive bonus
-        reward += (x_1 - x_0) / (self.control_skip * self._ts)
-        # print("v", (x_1 - x_0) / (self.control_skip * self._ts))
+        reward += self.get_ave_dx()
+        # print("v", self.get_ave_dx())
         reward += -0.1 * np.square(a).sum()
         # print("act norm", -0.1 * np.square(a).sum())
 
@@ -133,13 +136,25 @@ class HopperURDFEnv(gym.Env):
         # print("ang", ang)
         not_done = (np.abs(joints_dq) < 50).all() and (height > .7) and (height < 1.8)
 
-        return self.get_extended_observation(), reward, not not_done, {}
+        return self.obs, reward, not not_done, {}
 
     def get_dist(self):
         return self._p.getJointState(self.robot.hopper_id, 0)[0]
 
-    def get_extended_observation(self):
-        return self.robot.get_robot_observation()
+    def get_ave_dx(self):
+        if self.robot.last_x:
+            return (self.robot.x - self.robot.last_x) / (self.control_skip * self._ts)
+        else:
+            return 0.0
+
+    def update_extended_observation(self):
+        self.obs = self.robot.get_robot_observation()
+
+        if self.correct_obs_dx:
+            dx = np.clip(self.get_ave_dx() / 10.0, -1, 1)
+            if self.obs_noise:
+                dx = self.robot.perturb_scalar(dx, 0.1)
+            self.obs[5] = dx
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

@@ -2,6 +2,7 @@ import gym
 from gym.envs.registration import registry, make, spec
 from .humanoid_swimmer_env import HumanoidSwimmerEnv
 from .hopper_env import HopperURDFEnv
+from .hopper_env_MB import HopperURDFEnvMB
 from .laikago_env import LaikagoBulletEnv
 
 def register(id, *args, **kvargs):
@@ -22,6 +23,12 @@ register(
 register(
     id="HopperURDFEnv-v1",
     entry_point="my_pybullet_envs:HopperURDFEnv",
+    max_episode_steps=500,
+)
+
+register(
+    id="HopperURDFEnv-v2",
+    entry_point="my_pybullet_envs:HopperURDFEnvMB",
     max_episode_steps=500,
 )
 

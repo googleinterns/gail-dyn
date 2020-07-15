@@ -74,15 +74,20 @@ soft vs hard reset: what are people's habits?
 GAN-hopper:
 1. include both q and dq for now in s_t, though dq is not in model from Yuxiang
 2. Not including past info in s_t for now as well (no partial obs).
-
+3. how to handle dx?
+    - dx is actually already there...just not accurate
+    - replace old dx with last ave dx in s_t/obs
 
 Discriminator more likely to succeed when (s_t, ..., s_t+n) n becomes larger - should be a tunable param
 Nevertheless, rollout & store traj part remains the same.
 
-3. how to handle dx?
-    - just include last control step dx as part of state/obs?
-    - dx is actually already there...just not accurate
+
 
 4. probably when rolling out model, should not always start from beginning
 
-Seems that the loaded
+5. reward calc uses uncliped, unnoisy, unscaled obs/state
+what should the training data look like? (s_t, a_t, s_t1)
+probably should not be clipped.
+
+ground truth is noisy anyways
+** just get rid of clipping for now, policies seem to transfer still...

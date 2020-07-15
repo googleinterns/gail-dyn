@@ -38,6 +38,7 @@ class HopperURDF:
         self.base_init_euler = np.array([0., 0, 0])         # starting orientation
 
         self.max_forces = [200.0] * 3       # joint torque limits
+        self.obs_scaling = np.array([1.0] * 5 + [0.1] * 6)      # self scaling of obs
         self.ctrl_dofs = [3, 4, 5]
         self.root_dofs = [0, 1, 2]          # uncontrollable 2d xyr root
         self.n_total_dofs = len(self.ctrl_dofs) + len(self.root_dofs)
@@ -110,11 +111,10 @@ class HopperURDF:
 
     def apply_action(self, a):
         act = np.clip(a, -1.0, 1.0)
+        if self.act_noise:
+            self.torque = self.perturb(self.torque, 0.05)
 
         self.torque = act * self.max_forces
-
-        if self.act_noise:
-            self.torque = self.perturb(self.torque, 10.0)   # TODO
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.hopper_id,
@@ -130,8 +130,7 @@ class HopperURDF:
         joints_dq = np.hstack(joints_dq.flatten())
         return joints_q, joints_dq
 
-    def get_robot_observation(self):
-        obs = []
+    def get_raw_robot_state(self):
         a_q, a_dq = self.get_q_dq(self.root_dofs + self.ctrl_dofs)
 
         # TODO: seems a bug:
@@ -145,11 +144,18 @@ class HopperURDF:
         # print(self._p.getLinkState(self.hopper_id, 2, computeLinkVelocity=1)[0])
         # print(self._p.getLinkState(self.hopper_id, 2, computeLinkVelocity=1)[6])
 
+        return a_q, a_dq
+
+    def get_robot_observation(self):
+        obs = []
+        a_q, a_dq = self.get_raw_robot_state()
+
         obs.extend(list(a_q[1:]))
-        obs.extend(list(np.clip(a_dq / 10.0, -1, 1)))
+        obs.extend(list(a_dq))
+        obs = np.array(obs) * self.obs_scaling
 
         if self.obs_noise:
-            obs = self.perturb(obs, 0.1)        # TODO
+            obs = self.perturb(obs, 0.1)
 
         return list(obs)
 

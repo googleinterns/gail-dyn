@@ -106,6 +106,7 @@ class HopperURDFEnvMB(gym.Env):
 
         self.robot.update_x()
         self.update_extended_observation()
+        obs_unnorm = np.array(self.obs) / self.robot.obs_scaling
 
         reward = 2.0        # alive bonus
         reward += self.get_ave_dx()
@@ -113,28 +114,24 @@ class HopperURDFEnvMB(gym.Env):
         reward += -0.1 * np.square(a).sum()
         # print("act norm", -0.1 * np.square(a).sum())
 
-        q, _ = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        q = np.array(obs_unnorm[2:5])
         pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
         q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
-        # print(q)
-        # print(q_scaled)
         joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
         reward += -2.0 * joints_at_limit
-        # print("jl", -1.0 * joints_at_limit)
+        # print("jl", -2.0 * joints_at_limit)
 
-        joints_state = self._p.getJointStates(self.robot.hopper_id, self.robot.ctrl_dofs)
-        joints_dq = np.array(joints_state)[:, [1]]
-        joints_dq = np.hstack(joints_dq.flatten())
-        reward -= np.minimum(np.sum(np.abs(joints_dq)) * 0.02, 5.0)  # almost like /23
-        # print("vel pen", np.minimum(np.sum(np.abs(joints_dq)) * 0.02, 5.0))
+        dq = np.array(obs_unnorm[8:11])
+        reward -= np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
+        # print("vel pen", np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0))
 
-        height = self._p.getLinkState(self.robot.hopper_id, 2, computeForwardKinematics=1)[0][2]
+        height = obs_unnorm[0]
         # ang = self._p.getJointState(self.robot.hopper_id, 2)[0]
 
         # print(joints_dq)
         # print(height)
         # print("ang", ang)
-        not_done = (np.abs(joints_dq) < 50).all() and (height > .7) and (height < 1.8)
+        not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
 
         return self.obs, reward, not not_done, {}
 
@@ -151,7 +148,7 @@ class HopperURDFEnvMB(gym.Env):
         self.obs = self.robot.get_robot_observation()
 
         if self.correct_obs_dx:
-            dx = np.clip(self.get_ave_dx() / 10.0, -1, 1)
+            dx = self.get_ave_dx() * self.robot.obs_scaling[5]
             if self.obs_noise:
                 dx = self.robot.perturb_scalar(dx, 0.1)
             self.obs[5] = dx

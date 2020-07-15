@@ -107,3 +107,19 @@ python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-inter
   --gamma 0.99 --gae-lambda 0.95 --num-env-steps 6000000 --use-linear-lr-decay --use-proper-time-limits \
    --clip-param 0.2 --save-dir trained_models_laika_bullet_17 --seed 20017 --act_noise 1 --obs_noise 1 \
    --max_tar_vel 2.5 --ab 2.0 --q_pen_weight 0.5  --energy_weight 0.1
+
+
+GAN-hopper
+collect normal trajs
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_3_ave_dx_normalfloor_n200.pkl"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_4_ave_dx_normalfloor_n200.pkl"
+
+collect soft floor trajs
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_3_ave_dx_softfloor_n200.pkl"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_4_ave_dx_softfloor_n200.pkl"

@@ -1,5 +1,6 @@
 import argparse
 import os
+from typing import *
 
 # workaround to unpickle olf model files
 import sys
@@ -35,6 +36,11 @@ parser.add_argument(
     help="directory to save agent logs (default: ./trained_models/)",
 )
 parser.add_argument(
+    "--save_path",
+    default="./tmp.pkl",
+    help="where the traj tuples are stored",
+)
+parser.add_argument(
     "--non-det",
     type=int,
     default=0,
@@ -54,7 +60,7 @@ args, unknown = parser.parse_known_args()  # this is an 'internal' method
 # which returns 'parsed', the same as what parse_args() would return
 # and 'unknown', the remainder of that
 # the difference to parse_args() is that it does not exit when it finds redundant arguments
-
+np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
 
 def try_numerical(string):
     # convert all extra arguments to numerical type (float) if possible
@@ -71,6 +77,23 @@ def pairwise(iterable):
     # s -> (s0, s1), (s2, s3), (s4, s5), ...
     a = iter(iterable)
     return zip(a, a)
+
+
+def wrap(obs: np.ndarray, is_cuda: bool) -> torch.Tensor:
+    obs = torch.Tensor([obs])
+    if is_cuda:
+        obs = obs.cuda()
+    return obs
+
+
+def unwrap(action: torch.Tensor, is_cuda: bool, clip=False) -> np.ndarray:
+    action = action.squeeze()
+    action = action.cpu() if is_cuda else action
+    if clip:
+        action = np.clip(action.numpy(), -1.0, 1.0)
+    else:
+        action = action.numpy()
+    return action
 
 
 for arg, value in pairwise(
@@ -141,6 +164,10 @@ recurrent_hidden_states = torch.zeros(
 )
 masks = torch.zeros(1, 1)
 
+all_trajs = {}
+cur_traj = []
+cur_traj_idx = 0
+
 obs = env.reset()
 # print("obs", obs)
 # input("reset, press enter")
@@ -157,9 +184,17 @@ while True:
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
-
+    tuple = list(unwrap(obs, is_cuda=is_cuda))
     # Obser reward and next obs
     obs, reward, done, _ = env.step(action)
+    # print("action", action)
+    # print("obs", obs)
+    tuple += list(unwrap(action, is_cuda=is_cuda))
+    tuple += list(unwrap(obs, is_cuda=is_cuda))
+    # print(tuple)
+
+    assert len(tuple)==11+3+11
+    cur_traj.append(tuple)
     last_dist = dist
     dist = env_core.get_dist()
 
@@ -172,6 +207,12 @@ while True:
             f"x: {last_dist:.2f}\t"
         )
         reward_total = 0.0
+        print(np.array(cur_traj).shape)
+        all_trajs[cur_traj_idx] = cur_traj
+        cur_traj_idx += 1
+        cur_traj = []
+        if cur_traj_idx >= 200:
+            break
 
     try:
         env_core.cam_track_torso_link()
@@ -180,3 +221,8 @@ while True:
         print("not bullet env")
 
     masks.fill_(0.0 if done else 1.0)
+
+
+with open(args.save_path, "wb") as handle:
+    # print(all_trajs)
+    pickle.dump(all_trajs, handle, protocol=pickle.HIGHEST_PROTOCOL)

@@ -11,6 +11,7 @@ import time
 import gym, gym.utils.seeding
 import numpy as np
 import math
+from gan import utils
 
 import os
 import inspect
@@ -20,16 +21,12 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 class HopperURDF:
     def __init__(self,
                  init_noise=True,
-                 obs_noise=True,
-                 act_noise=True,
                  time_step=1. / 500,
                  np_random=None,
                  box_shape=True             # TODO: capsule false
                  ):
 
         self.init_noise = init_noise
-        self.obs_noise = obs_noise
-        self.act_noise = act_noise
 
         self._ts = time_step
         self.np_random = np_random
@@ -69,11 +66,11 @@ class HopperURDF:
         # self.print_all_joints_info()
 
         if self.init_noise:
-            init_q = self.perturb([0.0] * self.n_total_dofs, 0.01)
-            init_dq = self.perturb([0.0] * self.n_total_dofs, 0.1)
+            init_q = utils.perturb([0.0] * self.n_total_dofs, 0.01, self.np_random)
+            init_dq = utils.perturb([0.0] * self.n_total_dofs, 0.1, self.np_random)
         else:
-            init_q = self.perturb([0.0] * self.n_total_dofs, 0.0)
-            init_dq = self.perturb([0.0] * self.n_total_dofs, 0.0)
+            init_q = utils.perturb([0.0] * self.n_total_dofs, 0.0, self.np_random)
+            init_dq = utils.perturb([0.0] * self.n_total_dofs, 0.0, self.np_random)
 
         for ind in range(self.n_total_dofs):
             self._p.resetJointState(self.hopper_id, ind, init_q[ind], init_dq[ind])
@@ -95,14 +92,6 @@ class HopperURDF:
         self.ll = np.array([self._p.getJointInfo(self.hopper_id, i)[8] for i in self.ctrl_dofs])
         self.ul = np.array([self._p.getJointInfo(self.hopper_id, i)[9] for i in self.ctrl_dofs])
 
-    def perturb(self, arr, r=0.02):
-        r = np.abs(r)
-        return np.copy(np.array(arr) + self.np_random.uniform(low=-r, high=r, size=len(arr)))
-
-    def perturb_scalar(self, a, r=0.02):
-        r = np.abs(r)
-        return a + self.np_random.uniform(low=-r, high=r)
-
     def print_all_joints_info(self):
         for i in range(self._p.getNumJoints(self.hopper_id)):
             print(self._p.getJointInfo(self.hopper_id, i)[0:3],
@@ -110,8 +99,6 @@ class HopperURDF:
                   self._p.getJointInfo(self.hopper_id, i)[12])
 
     def apply_action(self, a):
-        if self.act_noise:
-            self.torque = self.perturb(self.torque, 0.05)
 
         self.torque = a * self.max_forces
 
@@ -152,9 +139,6 @@ class HopperURDF:
         obs.extend(list(a_q[1:]))
         obs.extend(list(a_dq))
         obs = np.array(obs) * self.obs_scaling
-
-        if self.obs_noise:
-            obs = self.perturb(obs, 0.1)
 
         return list(obs)
 

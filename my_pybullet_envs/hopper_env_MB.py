@@ -11,6 +11,9 @@ import os
 import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
+import torch
+from gan.wgan_models import Generator
+from gan import utils
 
 class HopperURDFEnvMB(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
@@ -22,7 +25,8 @@ class HopperURDFEnvMB(gym.Env):
                  obs_noise=True,
                  control_skip=10,
                  using_torque_ctrl=True,
-                 correct_obs_dx=True        # if need to correct dx obs
+                 correct_obs_dx=True,        # if need to correct dx obs,
+                 use_gen_dyn=False
                  ):
 
         self.render = render
@@ -32,6 +36,7 @@ class HopperURDFEnvMB(gym.Env):
         self.control_skip = int(control_skip)
         self._ts = 1. / 500.
         self.correct_obs_dx = correct_obs_dx
+        self.use_gen_dyn = use_gen_dyn
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -40,8 +45,6 @@ class HopperURDFEnvMB(gym.Env):
 
         self.np_random = None
         self.robot = HopperURDF(init_noise=self.init_noise,
-                                obs_noise=self.obs_noise,
-                                act_noise=self.act_noise,
                                 time_step=self._ts,
                                 np_random=self.np_random)
         self.seed(0)  # used once temporarily, will be overwritten outside though superclass api
@@ -59,6 +62,12 @@ class HopperURDFEnvMB(gym.Env):
         obs_dim = len(self.obs)
         obs_dummy = np.array([1.12234567]*obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
+
+        self.gen_dyn = None
+        if self.use_gen_dyn:
+            self.gen_dyn = Generator()
+            self.gen_dyn.load_state_dict(torch.load("./gan/G_pre.pt"))
+            # self.gen_dyn.eval()
 
     def reset(self):
         self._p.resetSimulation()
@@ -93,20 +102,44 @@ class HopperURDFEnvMB(gym.Env):
         return self.obs
 
     def step(self, a):
+        if self.act_noise and a is not None:
+            a = utils.perturb(a, 0.05, self.np_random)
 
-        for _ in range(self.control_skip):
-            # action is in not -1,1
-            if a is not None:
-                self.act = np.clip(a, -1.0, 1.0)
-                self.robot.apply_action(self.act)
-            self._p.stepSimulation()
+        if not self.use_gen_dyn:
+            for _ in range(self.control_skip):
+                # action is in not -1,1
+                if a is not None:
+                    self.act = np.clip(a, -1.0, 1.0)
+                    self.robot.apply_action(self.act)
+                self._p.stepSimulation()
+                if self.render:
+                    time.sleep(self._ts * 0.5)
+                self.timer += 1
+            self.robot.update_x()
+            self.update_extended_observation()
+            obs_unnorm = np.array(self.obs) / self.robot.obs_scaling
+        else:
+
+            gen_input = list(self.obs) + list(a) + [0.0] * (11+3)
+            gen_input = utils.wrap(gen_input, is_cuda=False)      # TODO
+            gen_output = self.gen_dyn(gen_input)
+            gen_output = utils.unwrap(gen_output, is_cuda=False)
+
+            self.obs = gen_output
+            obs_unnorm = np.array(self.obs) / self.robot.obs_scaling
+            self.robot.last_x = self.robot.x
+            self.robot.x += obs_unnorm[5] * (self.control_skip * self._ts)
+
             if self.render:
-                time.sleep(self._ts * 0.5)
-            self.timer += 1
+                all_qs = [self.robot.x] + list(obs_unnorm[:5])
+                all_qs[1] -= 1.5
+                for ind in range(self.robot.n_total_dofs):
+                    self._p.resetJointState(self.robot.hopper_id, ind, all_qs[ind], 0.0)
+                time.sleep(self._ts * 5.0)
 
-        self.robot.update_x()
-        self.update_extended_observation()
-        obs_unnorm = np.array(self.obs) / self.robot.obs_scaling
+            if self.obs_noise:
+                self.obs = utils.perturb(self.obs, 0.1, self.np_random)
+            self.timer += self.control_skip
 
         reward = 2.0        # alive bonus
         reward += self.get_ave_dx()
@@ -149,9 +182,10 @@ class HopperURDFEnvMB(gym.Env):
 
         if self.correct_obs_dx:
             dx = self.get_ave_dx() * self.robot.obs_scaling[5]
-            if self.obs_noise:
-                dx = self.robot.perturb_scalar(dx, 0.1)
             self.obs[5] = dx
+
+        if self.obs_noise:
+            self.obs = utils.perturb(self.obs, 0.1, self.np_random)
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

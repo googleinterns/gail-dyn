@@ -94,4 +94,8 @@ ground truth is noisy anyways
 6. what about action clipping?
 just use clipped a_t in f_theta seems fine.
 
-7.
+7. what is this weight clipping? might be in odds with pre-training..
+
+8. Does it make sense to add obs noise when using/testing MB?
+ - visualizing MB
+ - using MB to train policy (maybe add noise is fine)

@@ -130,7 +130,9 @@ class HopperURDFEnvMB(gym.Env):
             obs_unnorm = np.array(self.obs) / self.robot.obs_scaling
         else:
 
-            gen_input = list(self.obs) + list(a) + [0.0] * (11+3)
+            # gen_input = list(self.obs) + list(a) + [0.0] * (11+3)
+
+            gen_input = list(self.obs) + list(a) + list(np.random.normal(0, 1, 14))       # TODO
             gen_input = utils.wrap(gen_input, is_cuda=False)      # TODO
             gen_output = self.gen_dyn(gen_input)
             gen_output = utils.unwrap(gen_output, is_cuda=False)

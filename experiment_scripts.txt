@@ -172,3 +172,43 @@ And
 python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4_2lowtau16_0/ppo --render 1 \
 --correct_obs_dx 1 --use_gen_dyn 0 --act_noise 1 --obs_noise 1 --iter 20 --seed 1099 --low_torque_env 1
 
+Crank v1:
+python -m gan.wgan_pretrain.py --train_real_path "./hopper_3_ave_dx_softfloor_n200.pkl" \
+--train_model_dir "./data/soft_3_t0"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 0 \
+--gen_dyn_path "./data/soft_3_t0/G_190.pt"
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_3_soft_gan0 --seed 10052 \
+  --warm-start "./trained_models_hopper_bullet_3/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 0 --obs_noise 0 \
+  --gen_dyn_path  "./data/soft_3_t0/G_190.pt"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3_soft_gan0/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --soft_floor_env 1
+
+
+Crank v1 again:
+python -m gan.wgan_pretrain.py --train_real_path "./hopper_4_ave_dx_2lowtau16_n200.pkl" \
+--train_model_dir "./data/2lowtau16_4_t0" --n_epochs 300
+python -m gan.wgan_pretrain.py --train_real_path "./hopper_4_ave_dx_2lowtau16_n200.pkl"\
+ --train_model_dir "./data/2lowtau16_4_t1" --n_epochs 500 --lr 0.00002  --n_critic 2
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 0 \
+--gen_dyn_path "./data/2lowtau16_4_t1/G_490.pt"
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_4_2lowtau16_gan1 --seed 10053 \
+  --warm-start "./trained_models_hopper_bullet_4/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 0 --obs_noise 0 \
+  --gen_dyn_path  "./data/2lowtau16_4_t1/G_490.pt"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir  trained_models_hopper_bullet_4_2lowtau16_gan1/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 ---low_torque_env 1

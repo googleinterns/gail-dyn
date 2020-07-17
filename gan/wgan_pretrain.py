@@ -24,6 +24,7 @@ os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--pre_n_epochs", type=int, default=50, help="number of epochs of pre training")
 parser.add_argument("--batch_size", type=int, default=128, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.00005, help="learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
@@ -33,6 +34,8 @@ parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads 
 parser.add_argument("--n_critic", type=int, default=5, help="number of training steps for discriminator per iter")
 parser.add_argument("--clip_value", type=float, default=0.01, help="lower and upper clip value for disc. weights")
 parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
+parser.add_argument("--pretrain_path", type=str, default="./tmp.pkl")
+parser.add_argument("--pretrain_model_path", type=str, default="./tmp.pt")
 opt = parser.parse_args()
 print(opt)
 
@@ -67,7 +70,7 @@ def combine_gen_x_y_from_pickle(pathname):
     return XY[:, :14], XY[:, 14:25]     # x: (st, at), y:(st1)
 
 
-X, Y = combine_gen_x_y_from_pickle("hopper_3_ave_dx_normalfloor_n200.pkl")
+X, Y = combine_gen_x_y_from_pickle(opt.pretrain_path)
 # TODO: append zeros to X columns for pre-training
 X = np.concatenate((X, np.zeros((X.shape[0], gen_latent_dim))), axis=1)
 dataset = TensorDataset(Tensor(X), Tensor(Y))
@@ -82,7 +85,7 @@ loss_fn = torch.nn.L1Loss(reduction='sum')
 # Pre-training
 learning_rate = 1e-4
 optimizer_G_pre = torch.optim.Adam(generator.parameters(), lr=learning_rate)
-for epoch in range(80):
+for epoch in range(opt.pre_n_epochs):
     running_loss = 0.0
     for i, (x_batch, y_batch) in enumerate(gen_loader):
         optimizer_G_pre.zero_grad()
@@ -99,7 +102,7 @@ for epoch in range(80):
                   (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
 print("finished pre-training")
-torch.save(generator.state_dict(), "G_pre.pt")
+torch.save(generator.state_dict(), opt.pretrain_model_path)
 
 # # ----------
 # #  Training

@@ -123,3 +123,52 @@ python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_b
 
 python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 0 \
 --correct_obs_dx 1 --save_path "./hopper_4_ave_dx_softfloor_n200.pkl"
+
+
+# trained L1 model for soft floor
+# improve policy upon hard floor
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_3_soft --seed 10050 \
+  --warm-start "./trained_models_hopper_bullet_3/ppo/HopperURDFEnv-v1.pt"  --use_gen_dyn 1
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_3_soft_2 --seed 10051 \
+  --warm-start "./trained_models_hopper_bullet_3/ppo/HopperURDFEnv-v1.pt"  --use_gen_dyn 1
+
+# test with learned dyn
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo \
+--render 0 --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 1
+
+
+Crank v0 with standard supervised training:
+1. collect trajs from target env:
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_4_ave_dx_2lowtau16_n200.pkl" --low_torque_env 1
+2. run standard L1 training:
+python -m gan.wgan_pretrain.py --pre_n_epochs 50 --pretrain_path "./hopper_4_ave_dx_2lowtau16_n200.pkl" \
+--pretrain_model_path "G_pre_2lowtau16_4.pt"
+3. (Optional) test pre-trained model in data collection policy
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 1 \
+--gen_dyn_path "G_pre_2lowtau16_4.pt"
+4. improve policy MB upon data policy
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_4_2lowtau16_0 --seed 10052 \
+  --warm-start "./trained_models_hopper_bullet_4/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 1 \
+  --gen_dyn_path "G_pre_2lowtau16_4.pt"
+5. testing: change env_name_transfer to v2, then:
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4_2lowtau16_0/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 1 --iter 20 --seed 1099 \
+ --gen_dyn_path "G_pre_2lowtau16_4.pt"
+And
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4_2lowtau16_0/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 1 --obs_noise 1 --iter 20 --seed 1099 --low_torque_env 1
+

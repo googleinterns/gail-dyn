@@ -26,7 +26,10 @@ class HopperURDFEnvMB(gym.Env):
                  control_skip=10,
                  using_torque_ctrl=True,
                  correct_obs_dx=True,        # if need to correct dx obs,
-                 use_gen_dyn=False
+                 use_gen_dyn=False,
+                 gen_dyn_path=None,
+                 soft_floor_env=False,
+                 low_torque_env=False
                  ):
 
         self.render = render
@@ -37,6 +40,9 @@ class HopperURDFEnvMB(gym.Env):
         self._ts = 1. / 500.
         self.correct_obs_dx = correct_obs_dx
         self.use_gen_dyn = use_gen_dyn
+
+        self.soft_floor_env = soft_floor_env
+        self.low_torque_env = low_torque_env
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -66,8 +72,8 @@ class HopperURDFEnvMB(gym.Env):
         self.gen_dyn = None
         if self.use_gen_dyn:
             self.gen_dyn = Generator()
-            self.gen_dyn.load_state_dict(torch.load("./gan/G_pre.pt"))
-            # self.gen_dyn.eval()
+            self.gen_dyn.load_state_dict(torch.load(gen_dyn_path))
+            self.gen_dyn.eval()
 
     def reset(self):
         self._p.resetSimulation()
@@ -82,13 +88,17 @@ class HopperURDFEnvMB(gym.Env):
         self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)     # TODO
         self._p.changeDynamics(self.floor_id, -1, restitution=.2)
 
-        # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=600.0)     # TODO
-
         self.robot.reset(self._p)
         self.robot.update_x(reset=True)
         # # should be after reset!
-        # for ind in range(self.robot.n_total_dofs):
-        #     self._p.changeDynamics(self.robot.hopper_id, ind, contactDamping=100.0, contactStiffness=600.0)
+
+        if self.soft_floor_env:
+            self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=600.0)
+            for ind in range(self.robot.n_total_dofs):
+                self._p.changeDynamics(self.robot.hopper_id, ind, contactDamping=100.0, contactStiffness=600.0)
+
+        if self.low_torque_env:
+            self.robot.max_forces[2] = 200/1.6      # 1.6 for policy 4, 2.0 for policy 3
 
         #     self._p.changeDynamics(self.robot.hopper_id, ind, lateralFriction=1.0)
         #     self._p.changeDynamics(self.robot.hopper_id, ind, restitution=.2)
@@ -169,7 +179,7 @@ class HopperURDFEnvMB(gym.Env):
         return self.obs, reward, not not_done, {}
 
     def get_dist(self):
-        return self._p.getJointState(self.robot.hopper_id, 0)[0]
+        return self.robot.x
 
     def get_ave_dx(self):
         if self.robot.last_x:

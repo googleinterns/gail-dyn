@@ -142,6 +142,36 @@ def get_args():
         default='',
         help='policy pathname to warm start')
 
+    parser.add_argument(
+        '--gail',
+        action='store_true',
+        default=False,
+        help='do imitation learning with gail')
+    parser.add_argument(
+        '--gail-traj-path',
+        default='',
+        help='traj pathname for gail')
+    parser.add_argument(
+        '--gail-batch-size',
+        type=int,
+        default=128,
+        help='gail batch size (default: 128)')
+    parser.add_argument(
+        '--gail-epoch',
+        type=int,
+        default=5,
+        help='gail discriminator epochs (default: 5)')
+    parser.add_argument(
+        '--gail-traj-num',
+        type=int,
+        default=20,
+        help='gail batch size (default: 20)')
+    parser.add_argument(
+        '--gail-downsample-frequency',
+        type=int,
+        default=20,
+        help='gail expert trajectory downsample frequency (default: 20)')
+
     args, unknown = parser.parse_known_args()  # this is an 'internal' method
     # which returns 'parsed', the same as what parse_args() would return
     # and 'unknown', the remainder of that

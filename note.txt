@@ -105,3 +105,25 @@ Is action scale harder than action clip?
 
 Seems that it did not really predict fall over..
 
+
+GAN-hopper v2:
+
+TODO:
+https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/pull/215
+refactor distrbutions
+https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/pull/219/files?file-filters%5B%5D=.py#diff-1a0c504086a1f5d300c2ce3a75af2ef7
+plot training reward
+
+https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/issues/204
+https://github.com/openai/baselines/blob/master/baselines/gail/adversary.py#L51
+self.reward_op = -tf.log(1-tf.nn.sigmoid(generator_logits)+1e-8)
+# seems no reward normalize
+
+# gail always positive reward, does it favor longer episode?
+# maybe should not early terminate, especially when training dynamics
+
+# multi-cpu??
+
+# TODO:
+reported stats are initial env ones
+# TODO: I changed discriminator optimizer

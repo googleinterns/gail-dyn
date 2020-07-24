@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from .wgan_models import Generator, Discriminator
+from .utils import *
 
 import pickle
 
@@ -71,24 +72,24 @@ if cuda:
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 
-# Configure data loader
-def combine_gen_x_y_from_pickle(pathname):
-    with open(pathname, "rb") as handle:
-        saved_file = pickle.load(handle)
-    XY = []
-    for traj_idx, traj_tuples in saved_file.items():
-        XY.extend(traj_tuples)
-    XY = np.array(XY)
-    return XY[:, :14], XY[:, 14:25]     # x: (st, at), y:(st1)
-
-
-def combine_dis_xy_from_pickle(pathname):
-    with open(pathname, "rb") as handle:
-        saved_file = pickle.load(handle)
-    XY = []
-    for traj_idx, traj_tuples in saved_file.items():
-        XY.extend(traj_tuples)
-    return np.array(XY)
+# # Configure data loader
+# def combine_gen_x_y_from_pickle(pathname):
+#     with open(pathname, "rb") as handle:
+#         saved_file = pickle.load(handle)
+#     XY = []
+#     for traj_idx, traj_tuples in saved_file.items():
+#         XY.extend(traj_tuples)
+#     XY = np.array(XY)
+#     return XY[:, :14], XY[:, 14:25]     # x: (st, at), y:(st1)
+#
+#
+# def combine_dis_xy_from_pickle(pathname):
+#     with open(pathname, "rb") as handle:
+#         saved_file = pickle.load(handle)
+#     XY = []
+#     for traj_idx, traj_tuples in saved_file.items():
+#         XY.extend(traj_tuples)
+#     return np.array(XY)
 
 
 # X, Y = combine_gen_x_y_from_pickle(opt.pretrain_path)
@@ -121,7 +122,12 @@ def combine_dis_xy_from_pickle(pathname):
 # print("finished pre-training")
 # torch.save(generator.state_dict(), opt.pretrain_model_path)
 
-real_XY = combine_dis_xy_from_pickle(opt.train_real_path)
+# real_XY2 = combine_dis_xy_from_pickle(opt.train_real_path)
+real_XY = load_combined_sas_from_pickle(opt.train_real_path)
+# equal_arrays = (real_XY==real_XY2).all()
+# print(equal_arrays)
+# assert equal_arrays
+
 real_dataset = TensorDataset(Tensor(real_XY))
 dis_loader = DataLoader(real_dataset, batch_size=opt.batch_size, shuffle=True)
 # Optimizers
@@ -154,6 +160,7 @@ for epoch in range(opt.n_epochs):
         # z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
         # shape[0] is batch size
         z = Tensor(np.random.normal(0, 1, (real_xys.shape[0], gen_latent_dim)))
+        # z = Tensor(np.zeros((real_xys.shape[0], gen_latent_dim)))
         gen_in = torch.cat((real_xys[:, :gen_input_dim], z), dim=1)
 
         # Generate a batch of images

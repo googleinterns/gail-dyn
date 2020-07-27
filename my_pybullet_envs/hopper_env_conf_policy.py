@@ -142,7 +142,7 @@ class HopperConFEnv(gym.Env):
         self.update_extended_observation()
 
         height = self._p.getLinkState(self.robot.hopper_id, 2, computeForwardKinematics=1)[0][2]
-        not_done = (height > 0.0) and (height < 2.0)
+        not_done = (height > 0.0) and (height < 2.0)        # TODO
         reward = 0      # use gail to set reward
 
         return self.obs, reward, not not_done, {}
@@ -151,7 +151,7 @@ class HopperConFEnv(gym.Env):
         # each dim of input is roughly in [-1, 1]
 
         approx_mass = 18.0
-        max_fz = approx_mass * 9.81 * 5    # 5mg
+        max_fz = approx_mass * 9.81 * 5    # 5mg        # TODO
         # first dim represents fz
         fz = np.interp(con_f[0], [-1, 1], [-5, max_fz])
         # second dim represents fx

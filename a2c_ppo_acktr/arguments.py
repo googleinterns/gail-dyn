@@ -148,6 +148,11 @@ def get_args():
         default=False,
         help='do imitation learning with gail')
     parser.add_argument(
+        '--gail-dyn',
+        action='store_true',
+        default=False,
+        help='do dynamics imitation learning if gail on')
+    parser.add_argument(
         '--gail-traj-path',
         default='',
         help='traj pathname for gail')

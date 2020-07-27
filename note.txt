@@ -131,6 +131,17 @@ self.reward_op = -tf.log(1-tf.nn.sigmoid(generator_logits)+1e-8)
 
 # TODO: I changed discriminator optimizer
 
-
+TODO
 # maybe should use schocastic policy when train dynamics policy
 
+# need a flag for standard vs dynamics gail
+
+# mod expert data loader so that s contains (s_t,a_t) and "a" contains (s_t+1)
+# seems that rollouts storage can be kept the same structure s_0..N, a_0..(N-1) already there
+# when predict reward, r[step] = Dis(s[step] (which is s[step],a[step] in the standard setting), s[step+1] (first half))
+    last step? no problem, rollout has s 1-longer than a
+# mod rollout gen:
+    add next state to batch generator
+
+TODO:
+maybe add some spatial constraint that no con f above certain height

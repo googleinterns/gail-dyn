@@ -123,28 +123,41 @@ def main():
             actor_critic, args.value_loss_coef, args.entropy_coef, acktr=True)
 
     if args.gail:
-
         assert len(envs.observation_space.shape) == 1
-        discr = gail.Discriminator(
-            envs.observation_space.shape[0] + envs.action_space.shape[0], 100,      # TODO: 100
-            device)
 
-        # file_name = os.path.join(
-        #     args.gail_experts_dir, "trajs_{}.pt".format(
-        #         args.env_name.split('-')[0].lower()))
-        # expert_dataset = gail.ExpertDataset(
-        #     args.gail_traj_path, num_trajectories=4, subsample_frequency=20)
+        if not args.gail_dyn:
+            s_dim = envs.observation_space.shape[0]
+            a_dim = envs.action_space.shape[0]
+        else:
+            s_dim = 11      # TODO: hardcoded for hopper for now
+            a_dim = 3
+
+        if not args.gail_dyn:
+            discr = gail.Discriminator(
+                s_dim + a_dim, 100,      # TODO: 100
+                device)
+        else:
+            # learning dyn gail
+            discr = gail.Discriminator(
+                s_dim + a_dim + s_dim, 100,      # TODO: 100
+                device)
 
         expert_tuples = gan_utils.load_combined_sas_from_pickle(
             args.gail_traj_path,
             downsample_freq=args.gail_downsample_frequency,
             load_num_trajs=args.gail_traj_num
         )
-        s_dim = envs.observation_space.shape[0]
-        a_dim = envs.action_space.shape[0]
-        expert_s0 = expert_tuples[:, :s_dim]
-        expert_a0 = expert_tuples[:, s_dim:(s_dim+a_dim)]
-        expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
+
+        if not args.gail_dyn:
+            expert_s0 = expert_tuples[:, :s_dim]
+            expert_a0 = expert_tuples[:, s_dim:(s_dim+a_dim)]
+            expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
+        else:
+            # learning dyn gail
+            assert  expert_tuples.shape[1] == s_dim*2+a_dim
+            expert_s0a0 = expert_tuples[:, :(s_dim+a_dim)]
+            expert_s1 = expert_tuples[:, (s_dim+a_dim):]
+            expert_dataset = TensorDataset(Tensor(expert_s0a0), Tensor(expert_s1))
 
         drop_last = len(expert_dataset) > args.gail_batch_size
         gail_train_loader = DataLoader(
@@ -218,13 +231,21 @@ def main():
 
             for _ in range(gail_epoch):
                 discr.update(gail_train_loader, rollouts,
-                             utils.get_vec_normalize(envs)._obfilt)
+                             utils.get_vec_normalize(envs)._obfilt,
+                             args.gail_dyn, s_dim)
 
-            # seems overwriting rewards by gail
-            for step in range(args.num_steps):
-                rollouts.rewards[step], returns = discr.predict_reward(
-                    rollouts.obs[step], rollouts.actions[step], args.gamma,
-                    rollouts.masks[step])
+            # overwriting rewards by gail
+            if not args.gail_dyn:
+                for step in range(args.num_steps):
+                    rollouts.rewards[step], returns = discr.predict_reward(
+                        rollouts.obs[step], rollouts.actions[step], args.gamma,
+                        rollouts.masks[step])
+            else:
+                for step in range(args.num_steps):
+                    next_obs_s = rollouts.obs[step+1, :, :s_dim]        # second dim is num_proc
+                    rollouts.rewards[step], returns = discr.predict_reward(
+                        rollouts.obs[step], next_obs_s, args.gamma,
+                        rollouts.masks[step])
 
             # final returns
             # print(returns)

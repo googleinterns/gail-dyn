@@ -408,3 +408,18 @@ python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval
 --use-proper-time-limits --save-dir trained_models_hopper_conf_0_tmp --seed 20006
 
 python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_conf_0_tmp/ppo --render 1
+
+# first trials gail dyn soft floor
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 2000 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_3_ave_dx_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft3_0  --seed 40000 --gail-traj-num 100 --gail-batch-size 512
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 2000 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_3_ave_dx_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft3_1  --seed 40001 --gail-traj-num 100 --gail-batch-size 512
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_Gdyn_hopper_bullet_soft3_0/ppo --render 1 --non-det 1

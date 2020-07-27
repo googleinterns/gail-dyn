@@ -56,7 +56,9 @@ class Discriminator(nn.Module):
         grad_pen = lambda_ * (grad.norm(2, dim=1) - 1).pow(2).mean()
         return grad_pen
 
-    def update(self, expert_loader, rollouts, obsfilt=None):
+    def update(self, expert_loader, rollouts, obsfilt=None, is_gail_dyn=False, s_dim=None):
+        # if is_gail_dyn, the policy is a dynamics model to be learned
+        # if is_gail_dyn, s_dim should be an int storing original state dimension (wo act)
         self.train()
 
         policy_data_generator = rollouts.feed_forward_generator(
@@ -66,7 +68,12 @@ class Discriminator(nn.Module):
         n = 0
         for expert_batch, policy_batch in zip(expert_loader,
                                               policy_data_generator):
-            policy_state, policy_action = policy_batch[0], policy_batch[2]
+            if not is_gail_dyn:
+                policy_state, policy_action = policy_batch[0], policy_batch[2]
+            else:
+                # get first part (:s_dim) of next_obs_batch
+                policy_state, policy_action = policy_batch[0], policy_batch[-1][:, :s_dim]
+
             policy_d = self.trunk(
                 torch.cat([policy_state, policy_action], dim=1))
 

@@ -163,6 +163,7 @@ def main():
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10000)
+    gail_rewards = deque(maxlen=10) # this is just a moving average filter
 
     start = time.time()
     num_updates = int(
@@ -219,9 +220,13 @@ def main():
 
             # seems overwriting rewards by gail
             for step in range(args.num_steps):
-                rollouts.rewards[step] = discr.predict_reward(
+                rollouts.rewards[step], returns = discr.predict_reward(
                     rollouts.obs[step], rollouts.actions[step], args.gamma,
                     rollouts.masks[step])
+
+            # final returns
+            # print(returns)
+            gail_rewards.append(torch.mean(returns).cpu().data)
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
@@ -248,13 +253,13 @@ def main():
             end = time.time()
             rootLogger.info(
                 ("Updates {}, num timesteps {}, FPS {} \n Last {} training episodes:" +
-                 " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, dist en {}, l_pi {}, l_vf {}\n")
+                 " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, dist en {}, l_pi {}, l_vf {}, recent_gail_r {}\n")
                 .format(j, total_num_steps,
                         int(total_num_steps / (end - start)),
                         len(episode_rewards), np.mean(episode_rewards),
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
-                        action_loss))
+                        action_loss, np.mean(gail_rewards)))
             # actor_critic.dist.logstd._bias,
 
         if (args.eval_interval is not None and len(episode_rewards) > 1

@@ -23,6 +23,7 @@ class Discriminator(nn.Module):
         self.trunk.train()
 
         self.optimizer = torch.optim.RMSprop(self.trunk.parameters(), lr=5e-4)  # TODO
+        # self.optimizer = torch.optim.Adam(self.trunk.parameters())
 
         self.returns = None
         self.ret_rms = RunningMeanStd(shape=())
@@ -106,7 +107,7 @@ class Discriminator(nn.Module):
                 self.returns = reward.clone()
             else:
                 self.returns = self.returns * masks * gamma + reward
-            return reward
+            return reward, self.returns
 
 
 # class ExpertDataset(torch.utils.data.Dataset):

@@ -190,6 +190,10 @@ python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval
 
 python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3_soft_gan0/ppo --render 1 \
 --correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --soft_floor_env 1
+(baseline:
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 1 --obs_noise 0 --seed 1099 --soft_floor_env 1
+)
 
 
 Crank v1 again:
@@ -210,5 +214,189 @@ python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval
   --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 0 --obs_noise 0 \
   --gen_dyn_path  "./data/2lowtau16_4_t1/G_490.pt"
 
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_4_2lowtau16_gan2n --seed 10054 \
+  --warm-start "./trained_models_hopper_bullet_4/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 1 \
+  --gen_dyn_path  "./data/2lowtau16_4_t1/G_490.pt"
+
 python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir  trained_models_hopper_bullet_4_2lowtau16_gan1/ppo --render 1 \
---correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 ---low_torque_env 1
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --low_torque_env 1
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1512.3	x: 14.17
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1435.3	x: 12.57
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1352.1	x: 12.70
+(451, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1172.6	x: 11.06
+(393, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1519.0	x: 14.28
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1424.6	x: 12.49
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1430.8	x: 12.39
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1507.9	x: 14.43
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1283.3	x: 12.69
+(418, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1496.0	x: 14.12
+(495, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1367.5	x: 10.94
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1448.4	x: 12.93
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1088.8	x: 10.35
+(365, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1421.2	x: 12.44
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1479.3	x: 13.76
+(498, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1052.2	x: 10.18
+(352, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1380.1	x: 11.32
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1370.0	x: 10.74
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1486.6	x: 13.51
+(500, 25)
+trained_models_hopper_bullet_4_2lowtau16_gan1/ppo	tr: 1445.1	x: 12.62
+(500, 25)
+iter 30 is just no improvement
+
+(baseline:
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo --render 0 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --seed 1099 --low_torque_env 1
+)
+trained_models_hopper_bullet_4/ppo	tr: 1434.4	x: 12.12
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1468.0	x: 12.93
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 841.9	x: 8.23
+(269, 25)
+trained_models_hopper_bullet_4/ppo	tr: 839.3	x: 8.32
+(267, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1024.2	x: 9.06
+(350, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1477.4	x: 13.03
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 773.0	x: 7.61
+(251, 25)
+trained_models_hopper_bullet_4/ppo	tr: 775.4	x: 7.68
+(248, 25)
+trained_models_hopper_bullet_4/ppo	tr: 766.1	x: 7.69
+(245, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1038.3	x: 10.18
+(331, 25)
+trained_models_hopper_bullet_4/ppo	tr: 839.3	x: 8.35
+(270, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1023.2	x: 9.87
+(332, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1518.2	x: 14.16
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1524.7	x: 14.33
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 856.2	x: 8.62
+(272, 25)
+trained_models_hopper_bullet_4/ppo	tr: 758.7	x: 7.31
+(245, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1464.1	x: 12.50
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 853.5	x: 8.49
+(269, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1488.2	x: 13.19
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1460.1	x: 12.73
+(500, 25)
+trained_models_hopper_bullet_4/ppo	tr: 1058.7	x: 10.55
+(337, 25)
+
+
+
+Again, with no latent noise
+python -m gan.wgan_pretrain.py --train_real_path "./hopper_3_ave_dx_softfloor_n200.pkl" \
+--train_model_dir "./data/soft_3_t1_noz" --n_epochs 300
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 1 --act_noise 1 --obs_noise 0 \
+--gen_dyn_path "./data/soft_3_t1_noz/G_160.pt"
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 8 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_3_soft_gan1 --seed 10053 \
+  --warm-start "./trained_models_hopper_bullet_3/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --use_gen_dyn 1 --act_noise 0 --obs_noise 0 \
+  --gen_dyn_path  "./data/soft_3_t1_noz/G_160.pt"
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_3_soft_gan1/ppo --render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --soft_floor_env 1
+
+
+GAN-hopper v2:
+
+# try if standard GAIL can succeed first:
+# default params from github
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 2048 --num-processes 1 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_3_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_3_gail_0 --seed 20000
+
+# change back to adam optim
+# --num-mini-batch 8
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 2048 --num-processes 1 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_4_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_4_gail_0 --seed 20001
+
+# try turn off early terminate
+# try 3 again
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 2048 --num-processes 1 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_3_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_3_gail_1 --seed 20003
+
+# try turn off early terminate
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 1024 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_4_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_4_gail_1 --seed 20002
+
+# try policy 1
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_1/ppo --render 0 \
+--correct_obs_dx 1 --save_path "./hopper_1_ave_dx_normalfloor_n200.pkl"
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 500 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_1_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_1_gail_0 --seed 20004
+
+python main.py --env-name "HopperURDFEnv-v2" --algo ppo --use-gae --log-interval 5 \
+--num-steps 500 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./hopper_1_ave_dx_normalfloor_n200.pkl" \
+--save-dir trained_models_hopper_bullet_1_gail_1 --seed 20005
+
+# try if standard GAIL can succeed first for laika:
+
+python enjoy.py --env-name "LaikagoBulletEnv-v1" --load-dir trained_models_laika_bullet_15/ppo --render 0 \
+--save_traj 1 --save_path "./laika_15_normalfloor_n200.pkl"
+
+python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 2000 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./laika_15_normalfloor_n200.pkl" \
+--save-dir trained_models_laika_bullet_15_gail_0 --seed 30000 --gail-traj-num 100 --gail-batch-size 512
+
+python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 2000 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./laika_15_normalfloor_n200.pkl" \
+--save-dir trained_models_laika_bullet_15_gail_1 --seed 30001  --gail-traj-num 100  --gail-batch-size 512

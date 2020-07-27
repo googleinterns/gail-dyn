@@ -119,11 +119,18 @@ https://github.com/openai/baselines/blob/master/baselines/gail/adversary.py#L51
 self.reward_op = -tf.log(1-tf.nn.sigmoid(generator_logits)+1e-8)
 # seems no reward normalize
 
+# TODO:
 # gail always positive reward, does it favor longer episode?
 # maybe should not early terminate, especially when training dynamics
 
-# multi-cpu??
-
 # TODO:
-reported stats are initial env ones
+# multi-cpu??
+# GAIL seems slow, beacuse default params make Dis use very little data every iteration (5*128)
+# versus PPO(Gen) can use large data every iteration (32*250), also run 10 epochs on same data
+# if Dis can use more data per update, multi-cpu can make it faster (but might overfit to expert data)
+
 # TODO: I changed discriminator optimizer
+
+
+# maybe should use schocastic policy when train dynamics policy
+

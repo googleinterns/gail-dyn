@@ -64,11 +64,11 @@ class LaikagoBulletEnv(gym.Env):
         self.reset_counter = 200    # do a hard reset first
         obs = self.reset()    # and update init obs
 
-        action_dim = len(self.robot.ctrl_dofs)
+        self.action_dim = len(self.robot.ctrl_dofs)
         self.act = [0.0] * len(self.robot.ctrl_dofs)
-        self.action_space = gym.spaces.Box(low=np.array([-1.]*action_dim), high=np.array([+1.]*action_dim))
-        obs_dim = len(obs)
-        obs_dummy = np.array([1.12234567]*obs_dim)
+        self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
+        self.obs_dim = len(obs)
+        obs_dummy = np.array([1.12234567]*self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
 
     def reset(self):

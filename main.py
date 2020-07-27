@@ -140,8 +140,10 @@ def main():
             downsample_freq=args.gail_downsample_frequency,
             load_num_trajs=args.gail_traj_num
         )
-        expert_s0 = expert_tuples[:, :11]       # TODO: hardcoded
-        expert_a0 = expert_tuples[:, 11:14]
+        s_dim = envs.observation_space.shape[0]
+        a_dim = envs.action_space.shape[0]
+        expert_s0 = expert_tuples[:, :s_dim]
+        expert_a0 = expert_tuples[:, s_dim:(s_dim+a_dim)]
         expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
 
         drop_last = len(expert_dataset) > args.gail_batch_size

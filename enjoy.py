@@ -28,12 +28,29 @@ parser.add_argument(
 parser.add_argument(
     "--env-name",
     default="HumanoidSwimmerEnv-v1",
-    help="environment to train on (default: PongNoFrameskip-v4)",
+    help="environment to load and test on",
+)
+parser.add_argument(
+    "--src-env-name",
+    default="",
+    help="environment to transfer policy from ("" if same as test env)",
 )
 parser.add_argument(
     "--load-dir",
     default="./trained_models/",
     help="directory to save agent logs (default: ./trained_models/)",
+)
+parser.add_argument(
+    "--save_traj",
+    type=int,
+    default=0,
+    help="whether to save traj tuples",
+)
+parser.add_argument(
+    "--num-trajs",
+    type=int,
+    default=200,
+    help="how many trajs to rollout/store",
 )
 parser.add_argument(
     "--save_path",
@@ -134,7 +151,10 @@ env = make_vec_envs(
 # dont know why there are so many wrappers in make_vec_envs...
 env_core = env.venv.venv.envs[0].env.env
 
-env_name_transfer = "HopperURDFEnv-v1"
+if args.src_env_name == "":
+    env_name_transfer = args.env_name
+else:
+    env_name_transfer = args.src_env_name
 if args.iter >= 0:
     path = os.path.join(
         args.load_dir, env_name_transfer + "_" + str(args.iter) + ".pt"
@@ -178,47 +198,52 @@ reward_total = 0
 
 list_length = 0
 dist = 0
+last_dist = 0
 
 while True:
     with torch.no_grad():
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
-    tuple = list(unwrap(obs, is_cuda=is_cuda))
+
+    if args.save_traj:
+        tuple = list(unwrap(obs, is_cuda=is_cuda))
     # Obser reward and next obs
     obs, reward, done, _ = env.step(action)
-    # print("action", action)
-    # print("obs", obs)
-    tuple += list(unwrap(action, is_cuda=is_cuda))
-    tuple += list(unwrap(obs, is_cuda=is_cuda))
-    # print(tuple)
 
-    assert len(tuple)==11+3+11
-    cur_traj.append(tuple)
-    last_dist = dist
-    dist = env_core.get_dist()
+    if args.save_traj:
+        # print("action", action)
+        # print("obs", obs)
+        tuple += list(unwrap(action, is_cuda=is_cuda))
+        tuple += list(unwrap(obs, is_cuda=is_cuda))
+        # print(tuple)
+        assert len(tuple) == env_core.action_dim + env_core.obs_dim*2
+        cur_traj.append(tuple)
 
-    reward_total += reward
+    try:
+        env_core.cam_track_torso_link()
+        last_dist = dist
+        dist = env_core.get_dist()
+    except:
+        print("not bullet locomotion env")
+
+    reward_total += reward.cpu().numpy()[0][0]
 
     if done:
         print(
             f"{args.load_dir}\t"
-            f"tr: {reward_total.numpy()[0][0]:.1f}\t"
+            f"tr: {reward_total:.1f}\t"
             f"x: {last_dist:.2f}\t"
         )
         reward_total = 0.0
-        print(np.array(cur_traj).shape)
-        all_trajs[cur_traj_idx] = cur_traj
-        cur_traj_idx += 1
-        cur_traj = []
-        if cur_traj_idx >= 200:
-            break
 
-    try:
-        env_core.cam_track_torso_link()
-        # print("aaa")
-    except:
-        print("not bullet env")
+        if args.save_traj:
+            print(np.array(cur_traj).shape)
+            all_trajs[cur_traj_idx] = cur_traj
+            cur_traj_idx += 1
+            cur_traj = []
+            if cur_traj_idx >= args.num_trajs:
+                break
 
     masks.fill_(0.0 if done else 1.0)
 

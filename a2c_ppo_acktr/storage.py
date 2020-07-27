@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
+from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler, SequentialSampler
 
 
 def _flatten_helper(T, N, _tensor):
@@ -133,8 +133,14 @@ class RolloutStorage(object):
             SubsetRandomSampler(range(batch_size)),
             mini_batch_size,
             drop_last=True)
+        # sampler = BatchSampler(
+        #     SequentialSampler(range(batch_size)),
+        #     mini_batch_size,
+        #     drop_last=True)
+
         for indices in sampler:
             obs_batch = self.obs[:-1].view(-1, *self.obs.size()[2:])[indices]
+            next_obs_batch = self.obs[1:].view(-1, *self.obs.size()[2:])[indices]
             recurrent_hidden_states_batch = self.recurrent_hidden_states[:-1].view(
                 -1, self.recurrent_hidden_states.size(-1))[indices]
             actions_batch = self.actions.view(-1,
@@ -149,8 +155,12 @@ class RolloutStorage(object):
             else:
                 adv_targ = advantages.view(-1, 1)[indices]
 
+            # print("ind", indices)
+            # print("preobs", obs_batch[5::num_processes])
+            # print("afterobs", next_obs_batch[5::num_processes])
             yield obs_batch, recurrent_hidden_states_batch, actions_batch, \
-                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ
+                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ, \
+                next_obs_batch
 
     def recurrent_generator(self, advantages, num_mini_batch):
         num_processes = self.rewards.size(1)

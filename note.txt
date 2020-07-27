@@ -145,3 +145,12 @@ TODO
 
 TODO:
 maybe add some spatial constraint that no con f above certain height
+TODO:
+never predicts fall over - mod data collection early terminate
+TODO:
+better discriminator features, like delta s * 3
+TODO:
+check outputted action
+TODO: inconsistency of early termination
+TODO:
+constrain friction force dir

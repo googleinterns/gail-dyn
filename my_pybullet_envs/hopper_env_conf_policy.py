@@ -26,12 +26,12 @@ class HopperConFEnv(gym.Env):
                  control_skip=10,
                  using_torque_ctrl=True,
                  correct_obs_dx=True,        # if need to correct dx obs,
-
-                 # soft_floor_env=False,
-                 # low_torque_env=False,
-
+                 train_dyn=True,            # if false, fix dyn and train motor policy
                  behavior_dir="trained_models_hopper_bullet_3/ppo",
-                 behavior_env_name="HopperURDFEnv-v1"
+                 behavior_env_name="HopperURDFEnv-v1",
+                 dyn_dir="trained_models_Gdyn_hopper_bullet_soft3_0/ppo",
+                 dyn_env_name="HopperConFEnv-v1",
+                 dyn_iter=None
                  ):
 
         self.render = render
@@ -42,8 +42,7 @@ class HopperConFEnv(gym.Env):
         self._ts = 1. / 500.
         self.correct_obs_dx = correct_obs_dx
 
-        # self.soft_floor_env = soft_floor_env
-        # self.low_torque_env = low_torque_env
+        self.train_dyn = train_dyn
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -58,33 +57,41 @@ class HopperConFEnv(gym.Env):
         self.viewer = None
         self.timer = 0
 
-        # load fixed behavior policy
-        self.hopper_actor_critic, _, \
-            self.recurrent_hidden_states, \
-            self.masks = utils.load(
-                behavior_dir, behavior_env_name, False, None        # cpu load
-            )
-
-        # self.floor_id = None
+        if self.train_dyn:
+            self.dyn_actor_critic = None
+            # load fixed behavior policy
+            self.hopper_actor_critic, _, \
+                self.recurrent_hidden_states, \
+                self.masks = utils.load(
+                    behavior_dir, behavior_env_name, False, None        # cpu load
+                )
+        else:
+            # train motor policy
+            self.hopper_actor_critic = None
+            # load fixed dynamics model
+            self.dyn_actor_critic, _, \
+                self.recurrent_hidden_states, \
+                self.masks = utils.load(
+                    dyn_dir, dyn_env_name, False, dyn_iter        # cpu load
+                )
 
         self.obs = []
         self.behavior_obs_len = None
         self.behavior_act_len = None
         self.reset()    # and update init obs
 
-        self.action_dim = 4     # see beginning of step() for comment
+        if self.train_dyn:
+            assert self.behavior_act_len == len(self.robot.ctrl_dofs)
+            self.action_dim = 4     # see beginning of step() for comment
+            self.obs_dim = self.behavior_act_len + self.behavior_obs_len  # see beginning of update_obs() for comment
+        else:
+            self.action_dim = len(self.robot.ctrl_dofs)
+            self.obs_dim = len(self.obs)
+
         self.act = [0.0] * self.action_dim
         self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
-        self.obs_dim = self.behavior_act_len+self.behavior_obs_len    # see beginning of update_obs() for comment
-        assert self.behavior_act_len == len(self.robot.ctrl_dofs)
         obs_dummy = np.array([1.12234567]*self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
-
-        # self.gen_dyn = None
-        # if self.use_gen_dyn:
-        #     self.gen_dyn = Generator()
-        #     self.gen_dyn.load_state_dict(torch.load(gen_dyn_path))
-        #     self.gen_dyn.eval()
 
     def reset(self):
         self._p.resetSimulation()
@@ -122,18 +129,30 @@ class HopperConFEnv(gym.Env):
 
         return self.obs
 
-    def step(self, con_f):
-        # in hopper case, con_f is 4D, 2D contact force + 2D local force location
-        # redundant (3D) but fine
+    def step(self, a):
+        if self.train_dyn:
+            # in hopper case, env_action is 4D, 2D contact force + 2D local force location
+            # redundant (3D) but fine
+            env_action = a
+            robo_action = self.obs[self.behavior_obs_len:]
+        else:
+            robo_action = a
+            env_pi_obs = np.concatenate((self.obs, robo_action))
 
-        action = self.obs[self.behavior_obs_len:]
-        action = np.clip(action, -1.0, 1.0)
+            env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=False)
+            with torch.no_grad():
+                _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
+                    env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
+                )
+            env_action = utils.unwrap(env_action_nn, is_cuda=False)
+
+        robo_action = np.clip(robo_action, -1.0, 1.0)
         if self.act_noise:
-            action = utils.perturb(action, 0.05, self.np_random)
+            robo_action = utils.perturb(robo_action, 0.05, self.np_random)
 
         for _ in range(self.control_skip):
-            self.robot.apply_action(action)
-            self.apply_scale_clip_conf_from_pi(con_f)
+            self.robot.apply_action(robo_action)
+            self.apply_scale_clip_conf_from_pi(env_action)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)
@@ -141,11 +160,39 @@ class HopperConFEnv(gym.Env):
         self.robot.update_x()
         self.update_extended_observation()
 
-        height = self._p.getLinkState(self.robot.hopper_id, 2, computeForwardKinematics=1)[0][2]
-        not_done = (height > 0.0) and (height < 2.0)        # TODO
-        reward = 0      # use gail to set reward
+        obs_unnorm = np.array(self.obs[:len(self.robot.obs_scaling)]) / self.robot.obs_scaling
 
-        return self.obs, reward, not not_done, {}
+        reward = 2.0        # alive bonus
+        reward += self.get_ave_dx()
+        # print("v", self.get_ave_dx())
+        reward += -0.1 * np.square(a).sum()
+        # print("act norm", -0.1 * np.square(a).sum())
+
+        q = np.array(obs_unnorm[2:5])
+        pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
+        q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
+        joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
+        reward += -2.0 * joints_at_limit
+        # print("jl", -2.0 * joints_at_limit)
+
+        dq = np.array(obs_unnorm[8:11])
+        reward -= np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
+        # print("vel pen", np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0))
+
+        height = obs_unnorm[0]
+        # ang = self._p.getJointState(self.robot.hopper_id, 2)[0]
+
+        # print(joints_dq)
+        # print(height)
+        # print("ang", ang)
+
+        if self.train_dyn:
+            not_done = (height > 0.0) and (height < 2.0)
+        else:
+            not_done = (height > 0.0) and (height < 2.0)
+            # not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
+
+        return self.obs, reward, not not_done, {}       # if train dyn, reward will be overwritten by gail
 
     def apply_scale_clip_conf_from_pi(self, con_f):
         # each dim of input is roughly in [-1, 1]
@@ -189,18 +236,19 @@ class HopperConFEnv(gym.Env):
         if self.obs_noise:
             self.obs = utils.perturb(self.obs, 0.1, self.np_random)
 
-        self.behavior_obs_len = len(self.obs)
+        if self.train_dyn:
+            self.behavior_obs_len = len(self.obs)
 
-        obs_nn = utils.wrap(self.obs, is_cuda=False)
-        with torch.no_grad():
-            _, action_nn, _, self.recurrent_hidden_states = self.hopper_actor_critic.act(
-                obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False     # TODO, det pi
-            )
-        action = utils.unwrap(action_nn, is_cuda=False)
+            obs_nn = utils.wrap(self.obs, is_cuda=False)
+            with torch.no_grad():
+                _, action_nn, _, self.recurrent_hidden_states = self.hopper_actor_critic.act(
+                    obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False     # TODO, det pi
+                )
+            action = utils.unwrap(action_nn, is_cuda=False)
 
-        self.behavior_act_len = len(action)
+            self.behavior_act_len = len(action)
 
-        self.obs = np.concatenate((self.obs, action))
+            self.obs = np.concatenate((self.obs, action))
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

@@ -400,3 +400,11 @@ python main.py --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-inter
 --num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
 --use-proper-time-limits --gail --gail-traj-path "./laika_15_normalfloor_n200.pkl" \
 --save-dir trained_models_laika_bullet_15_gail_1 --seed 30001  --gail-traj-num 100  --gail-batch-size 512
+
+# test "HopperConFEnv-v1"
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 5 \
+--num-steps 500 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --save-dir trained_models_hopper_conf_0_tmp --seed 20006
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_conf_0_tmp/ppo --render 1

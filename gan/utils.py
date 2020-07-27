@@ -1,6 +1,42 @@
 import torch
 import numpy as np
 import pickle
+import os
+
+
+def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
+    """Loads parameters for a specified policy.
+
+    Args:
+        policy_dir: The directory to load the policy from.
+        env_name: The environment name of the policy.
+        is_cuda: Whether to use gpu.
+        iter_num: The iteration of the policy model to load.
+
+    Returns:
+        actor_critic: The actor critic model.
+        ob_rms: ?
+        recurrent_hidden_states: The recurrent hidden states of the model.
+        masks: ?
+    """
+    if iter_num is not None:
+        path = os.path.join(policy_dir, env_name + "_" + str(iter_num) + ".pt")
+    else:
+        path = os.path.join(policy_dir, env_name + ".pt")
+    print(f"| loading policy from {path}")
+    if is_cuda:
+        actor_critic, ob_rms = torch.load(path)
+    else:
+        actor_critic, ob_rms = torch.load(path, map_location="cpu")
+    recurrent_hidden_states = torch.zeros(1, actor_critic.recurrent_hidden_state_size)
+    masks = torch.zeros(1, 1)
+    return (
+        actor_critic,
+        ob_rms,
+        recurrent_hidden_states,
+        masks,
+    )
+
 
 def wrap(obs: np.ndarray, is_cuda: bool) -> torch.Tensor:
     obs = torch.Tensor([obs])
@@ -48,3 +84,22 @@ def load_combined_sas_from_pickle(pathname, downsample_freq=1, load_num_trajs=No
         if load_num_trajs and traj_idx >= load_num_trajs - 1:
             break
     return np.array(XY)
+
+
+def get_link_com_xyz_orn(body_id, link_id, bullet_session):
+    # get the world transform (xyz and quaternion) of the Center of Mass of the link
+    # We *assume* link CoM transform == link shape transform (the one you use to calculate fluid force on each shape)
+    assert link_id >= -1
+    if link_id == -1:
+        link_com, link_quat = bullet_session.getBasePositionAndOrientation(body_id)
+    else:
+        link_com, link_quat, *_ = bullet_session.getLinkState(body_id, link_id, computeForwardKinematics=1)
+    return list(link_com), list(link_quat)
+
+
+def apply_external_world_force_on_local_point(body_id, link_id, world_force, local_com_offset, bullet_session):
+    link_com, link_quat = get_link_com_xyz_orn(body_id, link_id, bullet_session)
+    _, inv_link_quat = bullet_session.invertTransform([0., 0, 0], link_quat)  # obj->world
+    local_force, _ = bullet_session.multiplyTransforms([0., 0, 0], inv_link_quat, world_force, [0, 0, 0, 1])
+    bullet_session.applyExternalForce(body_id, link_id, local_force,
+                                      local_com_offset, flags=bullet_session.LINK_FRAME)

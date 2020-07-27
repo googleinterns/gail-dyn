@@ -4,6 +4,8 @@ from .humanoid_swimmer_env import HumanoidSwimmerEnv
 from .hopper_env import HopperURDFEnv
 from .hopper_env_MB import HopperURDFEnvMB
 from .laikago_env import LaikagoBulletEnv
+from .hopper_env_conf_policy import HopperConFEnv
+
 
 def register(id, *args, **kvargs):
     if id in registry.env_specs:
@@ -29,6 +31,12 @@ register(
 register(
     id="HopperURDFEnv-v2",
     entry_point="my_pybullet_envs:HopperURDFEnvMB",
+    max_episode_steps=500,
+)
+
+register(
+    id="HopperConFEnv-v1",
+    entry_point="my_pybullet_envs:HopperConFEnv",
     max_episode_steps=500,
 )
 

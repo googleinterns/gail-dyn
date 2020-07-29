@@ -78,6 +78,9 @@ class DiagGaussian(nn.Module):
         self.fc_mean = init_(nn.Linear(num_inputs, num_outputs))
         self.logstd = AddBias(torch.zeros(num_outputs))
 
+    def reset_variance(self, num_outputs):
+        self.logstd = AddBias(torch.zeros(num_outputs))
+
     def forward(self, x):
         action_mean = self.fc_mean(x)
 

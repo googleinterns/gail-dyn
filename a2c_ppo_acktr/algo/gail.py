@@ -22,8 +22,8 @@ class Discriminator(nn.Module):
 
         self.trunk.train()
 
-        self.optimizer = torch.optim.RMSprop(self.trunk.parameters(), lr=5e-4)  # TODO
-        # self.optimizer = torch.optim.Adam(self.trunk.parameters())
+        # self.optimizer = torch.optim.RMSprop(self.trunk.parameters(), lr=5e-4)  # TODO
+        self.optimizer = torch.optim.Adam(self.trunk.parameters())
 
         self.returns = None
         self.ret_rms = RunningMeanStd(shape=())
@@ -64,7 +64,7 @@ class Discriminator(nn.Module):
         policy_data_generator = rollouts.feed_forward_generator(
             None, mini_batch_size=expert_loader.batch_size)
 
-        loss = 0
+        loss = expert_loss_t = policy_loss_t = 0
         n = 0
         for expert_batch, policy_batch in zip(expert_loader,
                                               policy_data_generator):
@@ -97,12 +97,14 @@ class Discriminator(nn.Module):
                                              policy_state, policy_action)
 
             loss += (gail_loss + grad_pen).item()
+            expert_loss_t += expert_loss.item()
+            policy_loss_t += policy_loss.item()
             n += 1
 
             self.optimizer.zero_grad()
             (gail_loss + grad_pen).backward()
             self.optimizer.step()
-        return loss / n
+        return loss / n, expert_loss_t / n, policy_loss_t / n
 
     def predict_reward(self, state, action, gamma, masks):
         with torch.no_grad():
@@ -113,7 +115,7 @@ class Discriminator(nn.Module):
             if self.returns is None:
                 self.returns = reward.clone()
             else:
-                self.returns = self.returns * masks * gamma + reward
+                self.returns = self.returns * masks + reward
             return reward, self.returns
 
 

@@ -230,7 +230,7 @@ def main():
                 gail_epoch = 100  # Warm up
 
             for _ in range(gail_epoch):
-                discr.update(gail_train_loader, rollouts,
+                gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,
                              utils.get_vec_normalize(envs)._obfilt,
                              args.gail_dyn, s_dim)
 
@@ -276,13 +276,16 @@ def main():
             end = time.time()
             rootLogger.info(
                 ("Updates {}, num timesteps {}, FPS {} \n Last {} training episodes:" +
-                 " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, dist en {}, l_pi {}, l_vf {}, recent_gail_r {}\n")
+                 " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, " +
+                 "dist en {}, l_pi {}, l_vf {}, recent_gail_r {}," +
+                 "loss_gail {}, loss_gail_e {}, loss_gail_p {}\n")
                 .format(j, total_num_steps,
                         int(total_num_steps / (end - start)),
                         len(episode_rewards), np.mean(episode_rewards),
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
-                        action_loss, np.mean(gail_rewards)))
+                        action_loss, np.mean(gail_rewards),
+                        gail_loss, gail_loss_e, gail_loss_p))
             # actor_critic.dist.logstd._bias,
 
         if (args.eval_interval is not None and len(episode_rewards) > 1

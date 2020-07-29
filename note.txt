@@ -151,6 +151,34 @@ TODO:
 better discriminator features, like delta s * 3
 TODO:
 check outputted action
+TODO: check dis output when return=50
 TODO: inconsistency of early termination
 TODO:
 constrain friction force dir
+
+TODO: revert params
+
+How to help dis:
+1. use Ground truth (s,a)
+2. use more data/traj
+3. dis could use a longer window as input
+
+
+Training schedule:
+1. Train dis longer/more frequently
+2. (later) interleave between pi & model improvement (ensemble)
+3. add randomness to generator
+
+
+verify that dis always predicts high reward for fake
+verify that expert loss is low but fake loss is high
+
+GAN-hopper v2.1:
+Use longer window for dis input
+0s -0.04s -0.08s -0.12s -0.16s
+
+Assign reward to beginning of traj?
+pad initial state at the beginning
+
+
+TODO: reproducibility issue

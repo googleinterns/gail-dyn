@@ -200,9 +200,9 @@ class HopperConFEnv(gym.Env):
         approx_mass = 18.0
         max_fz = approx_mass * 9.81 * 5    # 5mg        # TODO
         # first dim represents fz
-        fz = np.interp(con_f[0], [-1, 1], [-5, max_fz])
+        fz = np.interp(con_f[0], [-0.1, 5], [-5, max_fz])
         # second dim represents fx
-        fx = np.interp(con_f[1], [-1, 1], [-max_fz, max_fz])    # mu<=1.0
+        fx = np.interp(con_f[1], [-5, 5], [-max_fz, max_fz])    # mu<=1.0
         # third dim represents f location in foot coordinate x
         f_loc_x = np.interp(con_f[2], [-1, 1], [-0.3, 0.3])     # foot length 0.5
         # fourth dim represents f location in foot coordinate z

@@ -220,6 +220,7 @@ def main():
                 rollouts.obs[-1], rollouts.recurrent_hidden_states[-1],
                 rollouts.masks[-1]).detach()
 
+        gail_loss, gail_loss_e, gail_loss_p = None, None, None
         if args.gail:
             # TODO: odd. turn this off for now since no state normalize
             # if j >= 10:
@@ -270,6 +271,10 @@ def main():
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + "_" + str(j) + ".pt"))
+
+            if args.gail:
+                torch.save(discr, os.path.join(save_path, args.env_name + "_D.pt"))
+                torch.save(discr, os.path.join(save_path, args.env_name + "_" + str(j) + "_D.pt"))
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps

@@ -111,12 +111,19 @@ class Discriminator(nn.Module):
             self.eval()
             d = self.trunk(torch.cat([state, action], dim=1))
             s = torch.sigmoid(d)
-            reward = -(1 - s + 1e-7).log()  # avoid exploding, should not matter
+            reward = -(1 - s + 1e-7).log()  # avoid exploding, should not matter TODO-0.65
             if self.returns is None:
                 self.returns = reward.clone()
             else:
-                self.returns = self.returns * masks + reward
+                self.returns = self.returns * gamma * masks + reward
             return reward, self.returns
+
+    def predict_prob_single_step(self, state, action):
+        with torch.no_grad():
+            self.eval()
+            d = self.trunk(torch.cat([state, action], dim=1))
+            s = torch.sigmoid(d)
+            return s        # s=1, think real, 0 think fake
 
 
 # class ExpertDataset(torch.utils.data.Dataset):

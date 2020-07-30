@@ -177,8 +177,26 @@ GAN-hopper v2.1:
 Use longer window for dis input
 0s -0.04s -0.08s -0.12s -0.16s
 
+# need to change D input dim
+# need a new expert loader
+# currently simply split (s,a,s) into (s,a) and s
+
+# need a new policy data generator as well
+
+# need a new predict reward
+
+
 Assign reward to beginning of traj?
 pad initial state at the beginning
 
 
 TODO: reproducibility issue
+
+TODO: gail reward & loss stopped matching.. might be an issue
+
+provide GT value seems to be important? entropy is more healthy
+Maybe large a range is also important?
+(Hopefully add a bit fall down data is not important
+
+# gail ephoch matter??
+

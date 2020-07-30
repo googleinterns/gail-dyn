@@ -467,3 +467,141 @@ python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval
 --use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_3_ave_dx_softfloor_n200.pkl" \
 --save-dir trained_models_Gdyn_hopper_bullet_soft3_2  --seed 40012 --gail-traj-num 100
 
+# try GT action/obs
+
+#         action += (torch.rand(action.size()).to(device)-0.5) * 0.3
+#         not_done = (np.abs(dq) < 50).all() and (height > .3) and (height < 1.8)
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo \
+--render 0 --non-det 1 --correct_obs_dx 1 --act_noise 0 --obs_noise 0 \
+--save_path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" --soft_floor_env 1 --src-env-name "HopperURDFEnv-v1" \
+--save-traj 1
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_0  --seed 40020 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_1  --seed 40021 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_2  --seed 40022 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10 --act_noise 0 --obs_noise 0
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_bullet_4/ppo --src-env-name "HopperURDFEnv-v1" \
+--render 1 --non-det 1 --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_2/ppo \
+--dyn_env_name "HopperConFEnv-v1"
+
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_3  --seed 40023 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_4  --seed 40024 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_5  --seed 40025 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 10 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_bullet_4/ppo --src-env-name "HopperURDFEnv-v1" \
+--render 1 --non-det 1 --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_3/ppo \
+--dyn_env_name "HopperConFEnv-v1" --dyn-iter 310
+
+# store D as well
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_6  --seed 40026 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 15 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_7  --seed 40027 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 15 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_Gdyn_hopper_bullet_soft4gt_6/ppo \
+--render 1 --non-det 1 --train_dyn 1 --behavior_dir trained_models_hopper_bullet_4/ppo \
+--behavior_env_name "HopperURDFEnv-v1" --save-traj 1 --load-dis 1
+
+# TODO: not det yet....
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_Gdyn_hopper_bullet_soft4gt_7/ppo \
+ --render 0 --non-det 1 --train_dyn 1 --behavior_dir trained_models_hopper_bullet_4/ppo \
+ --behavior_env_name "HopperURDFEnv-v1" --save-traj 1 --load-dis 1 --seed 1099
+
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo \
+--render 1 --non-det 1 --correct_obs_dx 1 --act_noise 0 --obs_noise 0 \
+--save_path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" --soft_floor_env 1 --src-env-name "HopperURDFEnv-v1"
+
+
+# alive penalty 0.65
+# not_done = (np.abs(dq) < 50).all() and (height > .3) and (height < 1.8)
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_8  --seed 40028 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_9  --seed 40029 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+# cont. try 400, which still have a reasonable variance.
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_Gdyn_hopper_bullet_soft4gt_8/ppo \
+--render 1 --non-det 1 --train_dyn 1 --behavior_dir trained_models_hopper_bullet_4/ppo \
+--behavior_env_name "HopperURDFEnv-v1" --save-traj 0 --load-dis 0 --seed 1099 --iter 400 --load-dis 1
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_bullet_4/ppo \
+--src-env-name "HopperURDFEnv-v1" \
+--render 1 --non-det 1 --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_8/ppo \
+--dyn_env_name "HopperConFEnv-v1" --dyn-iter 400
+
+python main.py --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 1000 --num-processes 4 \
+  --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 --num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_4_soft_GailDyn_gt8_0 --seed 41100 \
+  --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_8/ppo \
+  --dyn_env_name "HopperConFEnv-v1" --dyn-iter 400 \
+  --warm-start "./trained_models_hopper_bullet_4/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --act_noise 0 --obs_noise 0
+
+python enjoy.py --env-name "HopperConFEnv-v1" --load-dir  trained_models_hopper_bullet_4_soft_GailDyn_gt8_0/ppo \
+--iter 20 \
+--render 1 --non-det 0 --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_8/ppo \
+--dyn_env_name "HopperConFEnv-v1" --dyn-iter 400
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4_soft_GailDyn_gt8_0/ppo \
+--render 1 \
+--correct_obs_dx 1 --use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --soft_floor_env 1 \
+--src-env-name "HopperConFEnv-v1" --non-det 0
+
+python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo \
+--render 1 --non-det 0 --correct_obs_dx 1 --act_noise 0 --obs_noise 0 \
+--soft_floor_env 1 --src-env-name "HopperURDFEnv-v1"

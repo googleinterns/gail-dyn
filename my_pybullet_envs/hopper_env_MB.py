@@ -176,7 +176,7 @@ class HopperURDFEnvMB(gym.Env):
         # print(joints_dq)
         # print(height)
         # print("ang", ang)
-        not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
+        not_done = (np.abs(dq) < 50).all() and (height > .3) and (height < 1.8)
 
         return self.obs, reward, not not_done, {}
 

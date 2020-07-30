@@ -66,6 +66,8 @@ class HopperConFEnv(gym.Env):
                     behavior_dir, behavior_env_name, False, None        # cpu load
                 )
         else:
+            if dyn_iter:
+                dyn_iter = int(dyn_iter)
             # train motor policy
             self.hopper_actor_critic = None
             # load fixed dynamics model
@@ -186,11 +188,9 @@ class HopperConFEnv(gym.Env):
         # print(height)
         # print("ang", ang)
 
-        if self.train_dyn:
-            not_done = (height > 0.0) and (height < 2.0)
-        else:
-            not_done = (height > 0.0) and (height < 2.0)
-            # not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
+        # TODO: is this good?
+        not_done = (np.abs(dq) < 50).all() and (height > .3) and (height < 1.8)
+        # not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
 
         return self.obs, reward, not not_done, {}       # if train dyn, reward will be overwritten by gail
 

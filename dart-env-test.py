@@ -1,5 +1,3 @@
-__author__ = 'yuwenhao'
-
 import gym
 import my_pydart_envs
 import pydart2

@@ -18,7 +18,6 @@ from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
-from evaluation import evaluate
 
 from gan import utils as gan_utils
 
@@ -292,12 +291,6 @@ def main():
                         action_loss, np.mean(gail_rewards),
                         gail_loss, gail_loss_e, gail_loss_p))
             # actor_critic.dist.logstd._bias,
-
-        if (args.eval_interval is not None and len(episode_rewards) > 1
-                and j % args.eval_interval == 0):
-            ob_rms = utils.get_vec_normalize(envs).ob_rms
-            evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                     args.num_processes, eval_log_dir, device)
 
         episode_rewards.clear()
 

@@ -404,15 +404,6 @@ def plot_results(
 
     return f, axarr
 
-def regression_analysis(df):
-    xcols = list(df.columns.copy())
-    xcols.remove('score')
-    ycols = ['score']
-    import statsmodels.api as sm
-    mod = sm.OLS(df[ycols], sm.add_constant(df[xcols]), hasconst=False)
-    res = mod.fit()
-    print(res.summary())
-
 def test_smooth():
     norig = 100
     nup = 300

@@ -13,8 +13,6 @@ import my_pybullet_envs
 
 from matplotlib import pyplot as plt
 
-# import my_pydart_envs
-
 import pickle
 
 from a2c_ppo_acktr.envs import VecPyTorch, make_vec_envs

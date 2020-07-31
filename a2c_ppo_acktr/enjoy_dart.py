@@ -9,8 +9,6 @@ import numpy as np
 import torch
 
 import gym
-import my_pybullet_envs
-
 import my_pydart_envs
 
 import pickle

@@ -1,3 +1,25 @@
+#  MIT License
+#
+#  Copyright (c) 2017 Ilya Kostrikov and (c) 2020 Google LLC
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in all
+#  copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+
 import torch
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler, SequentialSampler
 
@@ -95,8 +117,8 @@ class RolloutStorage(object):
                 self.returns[-1] = next_value
                 for step in reversed(range(self.rewards.size(0))):
                     self.returns[step] = (self.returns[step + 1] * \
-                        gamma * self.masks[step + 1] + self.rewards[step]) * self.bad_masks[step + 1] \
-                        + (1 - self.bad_masks[step + 1]) * self.value_preds[step]
+                                          gamma * self.masks[step + 1] + self.rewards[step]) * self.bad_masks[step + 1] \
+                                         + (1 - self.bad_masks[step + 1]) * self.value_preds[step]
         else:
             if use_gae:
                 self.value_preds[-1] = next_value
@@ -112,7 +134,7 @@ class RolloutStorage(object):
                 self.returns[-1] = next_value
                 for step in reversed(range(self.rewards.size(0))):
                     self.returns[step] = self.returns[step + 1] * \
-                        gamma * self.masks[step + 1] + self.rewards[step]
+                                         gamma * self.masks[step + 1] + self.rewards[step]
 
     def feed_forward_generator(self,
                                advantages,
@@ -159,8 +181,8 @@ class RolloutStorage(object):
             # print("preobs", obs_batch[5::num_processes])
             # print("afterobs", next_obs_batch[5::num_processes])
             yield obs_batch, recurrent_hidden_states_batch, actions_batch, \
-                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ, \
-                next_obs_batch
+                  value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ, \
+                  next_obs_batch
 
     def recurrent_generator(self, advantages, num_mini_batch):
         num_processes = self.rewards.size(1)
@@ -215,8 +237,8 @@ class RolloutStorage(object):
             return_batch = _flatten_helper(T, N, return_batch)
             masks_batch = _flatten_helper(T, N, masks_batch)
             old_action_log_probs_batch = _flatten_helper(T, N, \
-                    old_action_log_probs_batch)
+                                                         old_action_log_probs_batch)
             adv_targ = _flatten_helper(T, N, adv_targ)
 
             yield obs_batch, recurrent_hidden_states_batch, actions_batch, \
-                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ
+                  value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ

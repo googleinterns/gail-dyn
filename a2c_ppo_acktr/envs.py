@@ -1,3 +1,25 @@
+#  MIT License
+#
+#  Copyright (c) 2017 Ilya Kostrikov and (c) 2020 Google LLC
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in all
+#  copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+
 import os
 
 import gym
@@ -57,14 +79,14 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, **kwargs):
 
         if is_atari:
             raise NotImplementedError("atari")
-#        if is_atari:
-#            if len(env.observation_space.shape) == 3:
-#                env = wrap_deepmind(env)
-#        elif len(env.observation_space.shape) == 3:
-#            raise NotImplementedError(
-#                "CNN models work only for atari,\n"
-#                "please use a custom wrapper for a custom pixel input env.\n"
-#                "See wrap_deepmind for an example.")
+        #        if is_atari:
+        #            if len(env.observation_space.shape) == 3:
+        #                env = wrap_deepmind(env)
+        #        elif len(env.observation_space.shape) == 3:
+        #            raise NotImplementedError(
+        #                "CNN models work only for atari,\n"
+        #                "please use a custom wrapper for a custom pixel input env.\n"
+        #                "See wrap_deepmind for an example.")
 
         # If the input has shape (W,H,3), wrap for PyTorch convolutions
         obs_shape = env.observation_space.shape
@@ -226,7 +248,7 @@ class VecPyTorchFrameStack(VecEnvWrapper):
 
         if device is None:
             device = torch.device('cpu')
-        self.stacked_obs = torch.zeros((venv.num_envs, ) +
+        self.stacked_obs = torch.zeros((venv.num_envs,) +
                                        low.shape).to(device)
 
         observation_space = gym.spaces.Box(

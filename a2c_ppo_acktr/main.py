@@ -1,3 +1,25 @@
+#  MIT License
+#
+#  Copyright (c) 2017 Ilya Kostrikov and (c) 2020 Google LLC
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in all
+#  copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+
 import copy
 import glob
 import os
@@ -30,6 +52,7 @@ import my_pybullet_envs
 
 import logging
 import sys
+
 
 def main():
     args, extra_dict = get_args()
@@ -128,17 +151,17 @@ def main():
             s_dim = envs.observation_space.shape[0]
             a_dim = envs.action_space.shape[0]
         else:
-            s_dim = 11      # TODO: hardcoded for hopper for now
+            s_dim = 11  # TODO: hardcoded for hopper for now
             a_dim = 3
 
         if not args.gail_dyn:
             discr = gail.Discriminator(
-                s_dim + a_dim, 100,      # TODO: 100
+                s_dim + a_dim, 100,  # TODO: 100
                 device)
         else:
             # learning dyn gail
             discr = gail.Discriminator(
-                s_dim + a_dim + s_dim, 100,      # TODO: 100
+                s_dim + a_dim + s_dim, 100,  # TODO: 100
                 device)
 
         expert_tuples = gan_utils.load_combined_sas_from_pickle(
@@ -149,13 +172,13 @@ def main():
 
         if not args.gail_dyn:
             expert_s0 = expert_tuples[:, :s_dim]
-            expert_a0 = expert_tuples[:, s_dim:(s_dim+a_dim)]
+            expert_a0 = expert_tuples[:, s_dim:(s_dim + a_dim)]
             expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
         else:
             # learning dyn gail
-            assert  expert_tuples.shape[1] == s_dim*2+a_dim
-            expert_s0a0 = expert_tuples[:, :(s_dim+a_dim)]
-            expert_s1 = expert_tuples[:, (s_dim+a_dim):]
+            assert expert_tuples.shape[1] == s_dim * 2 + a_dim
+            expert_s0a0 = expert_tuples[:, :(s_dim + a_dim)]
+            expert_s1 = expert_tuples[:, (s_dim + a_dim):]
             expert_dataset = TensorDataset(Tensor(expert_s0a0), Tensor(expert_s1))
 
         drop_last = len(expert_dataset) > args.gail_batch_size
@@ -177,7 +200,7 @@ def main():
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10000)
-    gail_rewards = deque(maxlen=10) # this is just a moving average filter
+    gail_rewards = deque(maxlen=10)  # this is just a moving average filter
 
     start = time.time()
     num_updates = int(
@@ -231,8 +254,8 @@ def main():
 
             for _ in range(gail_epoch):
                 gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,
-                             utils.get_vec_normalize(envs)._obfilt,
-                             args.gail_dyn, s_dim)
+                                                                   utils.get_vec_normalize(envs)._obfilt,
+                                                                   args.gail_dyn, s_dim)
 
             # overwriting rewards by gail
             if not args.gail_dyn:
@@ -242,7 +265,7 @@ def main():
                         rollouts.masks[step])
             else:
                 for step in range(args.num_steps):
-                    next_obs_s = rollouts.obs[step+1, :, :s_dim]        # second dim is num_proc
+                    next_obs_s = rollouts.obs[step + 1, :, :s_dim]  # second dim is num_proc
                     rollouts.rewards[step], returns = discr.predict_reward(
                         rollouts.obs[step], next_obs_s, args.gamma,
                         rollouts.masks[step])
@@ -260,7 +283,7 @@ def main():
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
-                or j == num_updates - 1) and args.save_dir != "":
+            or j == num_updates - 1) and args.save_dir != "":
             torch.save([
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
@@ -283,13 +306,13 @@ def main():
                  " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, " +
                  "dist en {}, l_pi {}, l_vf {}, recent_gail_r {}," +
                  "loss_gail {}, loss_gail_e {}, loss_gail_p {}\n")
-                .format(j, total_num_steps,
-                        int(total_num_steps / (end - start)),
-                        len(episode_rewards), np.mean(episode_rewards),
-                        np.median(episode_rewards), np.min(episode_rewards),
-                        np.max(episode_rewards), dist_entropy, value_loss,
-                        action_loss, np.mean(gail_rewards),
-                        gail_loss, gail_loss_e, gail_loss_p))
+                    .format(j, total_num_steps,
+                            int(total_num_steps / (end - start)),
+                            len(episode_rewards), np.mean(episode_rewards),
+                            np.median(episode_rewards), np.min(episode_rewards),
+                            np.max(episode_rewards), dist_entropy, value_loss,
+                            action_loss, np.mean(gail_rewards),
+                            gail_loss, gail_loss_e, gail_loss_p))
             # actor_critic.dist.logstd._bias,
 
         episode_rewards.clear()

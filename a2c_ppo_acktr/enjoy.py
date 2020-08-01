@@ -1,3 +1,25 @@
+#  MIT License
+#
+#  Copyright (c) 2017 Ilya Kostrikov and (c) 2020 Google LLC
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in all
+#  copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+
 import argparse
 import os
 from typing import *
@@ -90,6 +112,7 @@ args, unknown = parser.parse_known_args()  # this is an 'internal' method
 # the difference to parse_args() is that it does not exit when it finds redundant arguments
 np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
 
+
 def try_numerical(string):
     # convert all extra arguments to numerical type (float) if possible
     # assume always float (pass bool as 0 or 1)
@@ -139,7 +162,7 @@ def plot_avg_dis_reward(args, avg_reward_list, dxs):
 
 
 for arg, value in pairwise(
-    unknown
+        unknown
 ):  # note: assume always --arg value (no --arg)
     assert arg.startswith(("-", "--"))
     parser.add_argument(
@@ -161,7 +184,6 @@ args.det = not args.non_det
 # If render is provided, use that. Otherwise, turn it on.
 if "render" not in extra_dict:
     extra_dict["render"] = True
-
 
 env = make_vec_envs(
     args.env_name,
@@ -210,7 +232,6 @@ if ob_rms:
     print(ob_rms.count)
     input("ob_rms")
 
-
 vec_norm = get_vec_normalize(env)
 if vec_norm is not None:
     vec_norm.eval()
@@ -230,7 +251,6 @@ obs = env.reset()
 # input("reset, press enter")
 done = False
 
-
 reward_total = 0
 
 list_length = 0
@@ -248,7 +268,7 @@ while True:
         )
         if args.enlarge_act_range:
             # 15% noise if a clipped to -1, 1
-            action += (torch.rand(action.size()).to(device)-0.5) * 0.3
+            action += (torch.rand(action.size()).to(device) - 0.5) * 0.3
 
     if args.save_traj:
         tuple = list(unwrap(obs, is_cuda=is_cuda))
@@ -264,7 +284,7 @@ while True:
         tuple += list(unwrap(action, is_cuda=is_cuda))
         tuple += list(unwrap(obs, is_cuda=is_cuda))
         # print(tuple)
-        assert len(tuple) == env_core.action_dim + env_core.obs_dim*2
+        assert len(tuple) == env_core.action_dim + env_core.obs_dim * 2
         cur_traj.append(tuple)
 
     if args.load_dis:
@@ -305,7 +325,6 @@ while True:
             dxs = []
 
     masks.fill_(0.0 if done else 1.0)
-
 
 with open(args.save_path, "wb") as handle:
     # print(all_trajs)

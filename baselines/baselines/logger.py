@@ -1,3 +1,26 @@
+#  The MIT License
+#
+#  Copyright (c) 2017 OpenAI (http://openai.com)
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#  THE SOFTWARE.
+#
+
 import os
 import sys
 import shutil
@@ -16,13 +39,16 @@ ERROR = 40
 
 DISABLED = 50
 
+
 class KVWriter(object):
     def writekvs(self, kvs):
         raise NotImplementedError
 
+
 class SeqWriter(object):
     def writeseq(self, seq):
         raise NotImplementedError
+
 
 class HumanOutputFormat(KVWriter, SeqWriter):
     def __init__(self, filename_or_file):
@@ -30,7 +56,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
             self.file = open(filename_or_file, 'wt')
             self.own_file = True
         else:
-            assert hasattr(filename_or_file, 'read'), 'expected file or str, got %s'%filename_or_file
+            assert hasattr(filename_or_file, 'read'), 'expected file or str, got %s' % filename_or_file
             self.file = filename_or_file
             self.own_file = False
 
@@ -70,13 +96,13 @@ class HumanOutputFormat(KVWriter, SeqWriter):
 
     def _truncate(self, s):
         maxlen = 30
-        return s[:maxlen-3] + '...' if len(s) > maxlen else s
+        return s[:maxlen - 3] + '...' if len(s) > maxlen else s
 
     def writeseq(self, seq):
         seq = list(seq)
         for (i, elem) in enumerate(seq):
             self.file.write(elem)
-            if i < len(seq) - 1: # add space unless this is the last one
+            if i < len(seq) - 1:  # add space unless this is the last one
                 self.file.write(' ')
         self.file.write('\n')
         self.file.flush()
@@ -84,6 +110,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
     def close(self):
         if self.own_file:
             self.file.close()
+
 
 class JSONOutputFormat(KVWriter):
     def __init__(self, filename):
@@ -98,6 +125,7 @@ class JSONOutputFormat(KVWriter):
 
     def close(self):
         self.file.close()
+
 
 class CSVOutputFormat(KVWriter):
     def __init__(self, filename):
@@ -135,6 +163,7 @@ class CSVOutputFormat(KVWriter):
     def close(self):
         self.file.close()
 
+
 def make_output_format(format, ev_dir, log_suffix=''):
     os.makedirs(ev_dir, exist_ok=True)
     if format == 'stdout':
@@ -148,6 +177,7 @@ def make_output_format(format, ev_dir, log_suffix=''):
     else:
         raise ValueError('Unknown format specified: %s' % (format,))
 
+
 # ================================================================
 # API
 # ================================================================
@@ -160,11 +190,13 @@ def logkv(key, val):
     """
     get_current().logkv(key, val)
 
+
 def logkv_mean(key, val):
     """
     The same as logkv(), but if called many times, values averaged.
     """
     get_current().logkv_mean(key, val)
+
 
 def logkvs(d):
     """
@@ -173,11 +205,13 @@ def logkvs(d):
     for (k, v) in d.items():
         logkv(k, v)
 
+
 def dumpkvs():
     """
     Write all of the diagnostics from the current iteration
     """
     return get_current().dumpkvs()
+
 
 def getkvs():
     return get_current().name2val
@@ -189,14 +223,18 @@ def log(*args, level=INFO):
     """
     get_current().log(*args, level=level)
 
+
 def debug(*args):
     log(*args, level=DEBUG)
+
 
 def info(*args):
     log(*args, level=INFO)
 
+
 def warn(*args):
     log(*args, level=WARN)
+
 
 def error(*args):
     log(*args, level=ERROR)
@@ -208,8 +246,10 @@ def set_level(level):
     """
     get_current().set_level(level)
 
+
 def set_comm(comm):
     get_current().set_comm(comm)
+
 
 def get_dir():
     """
@@ -218,8 +258,10 @@ def get_dir():
     """
     return get_current().get_dir()
 
+
 record_tabular = logkv
 dump_tabular = dumpkvs
+
 
 @contextmanager
 def profile_kv(scopename):
@@ -230,17 +272,21 @@ def profile_kv(scopename):
     finally:
         get_current().name2val[logkey] += time.time() - tstart
 
+
 def profile(n):
     """
     Usage:
     @profile("my_func")
     def my_func(): code
     """
+
     def decorator_with_name(func):
         def func_wrapper(*args, **kwargs):
             with profile_kv(n):
                 return func(*args, **kwargs)
+
         return func_wrapper
+
     return decorator_with_name
 
 
@@ -257,7 +303,7 @@ def get_current():
 
 class Logger(object):
     DEFAULT = None  # A logger with no output files. (See right below class definition)
-                    # So that you can still log to the terminal without setting up any output files
+    # So that you can still log to the terminal without setting up any output files
     CURRENT = None  # Current logger being used by the free functions above
 
     def __init__(self, dir, output_formats, comm=None):
@@ -275,7 +321,7 @@ class Logger(object):
 
     def logkv_mean(self, key, val):
         oldval, cnt = self.name2val[key], self.name2cnt[key]
-        self.name2val[key] = oldval*cnt/(cnt+1) + val/(cnt+1)
+        self.name2val[key] = oldval * cnt / (cnt + 1) + val / (cnt + 1)
         self.name2cnt[key] = cnt + 1
 
     def dumpkvs(self):
@@ -284,11 +330,11 @@ class Logger(object):
         else:
             from baselines.common import mpi_util
             d = mpi_util.mpi_weighted_mean(self.comm,
-                {name : (val, self.name2cnt.get(name, 1))
-                    for (name, val) in self.name2val.items()})
+                                           {name: (val, self.name2cnt.get(name, 1))
+                                            for (name, val) in self.name2val.items()})
             if self.comm.rank != 0:
-                d['dummy'] = 1 # so we don't get a warning about empty dict
-        out = d.copy() # Return the dict for unit testing purposes
+                d['dummy'] = 1  # so we don't get a warning about empty dict
+        out = d.copy()  # Return the dict for unit testing purposes
         for fmt in self.output_formats:
             if isinstance(fmt, KVWriter):
                 fmt.writekvs(d)
@@ -322,6 +368,7 @@ class Logger(object):
             if isinstance(fmt, SeqWriter):
                 fmt.writeseq(map(str, args))
 
+
 def get_rank_without_mpi_import():
     # check environment variables here instead of importing mpi4py
     # to avoid calling MPI_Init() when this module is imported
@@ -339,7 +386,7 @@ def configure(dir=None, format_strs=None, comm=None, log_suffix=''):
         dir = os.getenv('OPENAI_LOGDIR')
     if dir is None:
         dir = osp.join(tempfile.gettempdir(),
-            datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f"))
+                       datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f"))
     assert isinstance(dir, str)
     dir = os.path.expanduser(dir)
     os.makedirs(os.path.expanduser(dir), exist_ok=True)
@@ -358,17 +405,20 @@ def configure(dir=None, format_strs=None, comm=None, log_suffix=''):
 
     Logger.CURRENT = Logger(dir=dir, output_formats=output_formats, comm=comm)
     if output_formats:
-        log('Logging to %s'%dir)
+        log('Logging to %s' % dir)
+
 
 def _configure_default_logger():
     configure()
     Logger.DEFAULT = Logger.CURRENT
+
 
 def reset():
     if Logger.CURRENT is not Logger.DEFAULT:
         Logger.CURRENT.close()
         Logger.CURRENT = Logger.DEFAULT
         log('Reset logger')
+
 
 @contextmanager
 def scoped_configure(dir=None, format_strs=None, comm=None):
@@ -379,6 +429,7 @@ def scoped_configure(dir=None, format_strs=None, comm=None):
     finally:
         Logger.CURRENT.close()
         Logger.CURRENT = prevlogger
+
 
 # ================================================================
 
@@ -423,9 +474,11 @@ def read_json(fname):
             ds.append(json.loads(line))
     return pandas.DataFrame(ds)
 
+
 def read_csv(fname):
     import pandas
     return pandas.read_csv(fname, index_col=None, comment='#')
+
 
 if __name__ == "__main__":
     _demo()

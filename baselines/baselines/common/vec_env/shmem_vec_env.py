@@ -2,6 +2,29 @@
 An interface for asynchronous vectorized environments.
 """
 
+#  The MIT License
+#
+#  Copyright (c) 2017 OpenAI (http://openai.com)
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#  THE SOFTWARE.
+#
+
 import multiprocessing as mp
 import numpy as np
 from .vec_env import VecEnv, CloudpickleWrapper, clear_mpi_env_vars
@@ -49,7 +72,8 @@ class ShmemVecEnv(VecEnv):
                 wrapped_fn = CloudpickleWrapper(env_fn)
                 parent_pipe, child_pipe = ctx.Pipe()
                 proc = ctx.Process(target=_subproc_worker,
-                            args=(child_pipe, parent_pipe, wrapped_fn, obs_buf, self.obs_shapes, self.obs_dtypes, self.obs_keys))
+                                   args=(child_pipe, parent_pipe, wrapped_fn, obs_buf, self.obs_shapes, self.obs_dtypes,
+                                         self.obs_keys))
                 proc.daemon = True
                 self.procs.append(proc)
                 self.parent_pipes.append(parent_pipe)
@@ -97,7 +121,6 @@ class ShmemVecEnv(VecEnv):
     def _decode_obses(self, obs):
         result = {}
         for k in self.obs_keys:
-
             bufs = [b[k] for b in self.obs_bufs]
             o = [np.frombuffer(b.get_obj(), dtype=self.obs_dtypes[k]).reshape(self.obs_shapes[k]) for b in bufs]
             result[k] = np.array(o)
@@ -109,6 +132,7 @@ def _subproc_worker(pipe, parent_pipe, env_fn_wrapper, obs_bufs, obs_shapes, obs
     Control a single environment instance using IPC and
     shared memory.
     """
+
     def _write_obs(maybe_dict_obs):
         flatdict = obs_to_dict(maybe_dict_obs)
         for k in keys:

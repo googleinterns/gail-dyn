@@ -1,5 +1,29 @@
+#  The MIT License
+#
+#  Copyright (c) 2017 OpenAI (http://openai.com)
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#  THE SOFTWARE.
+#
+
 import re
 import os
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 _atari7 = ['BeamRider', 'Breakout', 'Enduro', 'Pong', 'Qbert', 'Seaquest', 'SpaceInvaders']
@@ -52,27 +76,30 @@ _ATARI_SUFFIX = 'NoFrameskip-v4'
 register_benchmark({
     'name': 'Atari50M',
     'description': '7 Atari games from Mnih et al. (2013), with pixel observations, 50M timesteps',
-    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(50e6)} for _game in _atari7]
+    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(50e6)} for _game in
+              _atari7]
 })
 
 register_benchmark({
     'name': 'Atari10M',
     'description': '7 Atari games from Mnih et al. (2013), with pixel observations, 10M timesteps',
-    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 6, 'num_timesteps': int(10e6)} for _game in _atari7]
+    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 6, 'num_timesteps': int(10e6)} for _game in
+              _atari7]
 })
 
 register_benchmark({
     'name': 'Atari1Hr',
     'description': '7 Atari games from Mnih et al. (2013), with pixel observations, 1 hour of walltime',
-    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_seconds': 60 * 60} for _game in _atari7]
+    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_seconds': 60 * 60} for _game in
+              _atari7]
 })
 
 register_benchmark({
     'name': 'AtariExploration10M',
     'description': '7 Atari games emphasizing exploration, with pixel observations, 10M timesteps',
-    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(10e6)} for _game in _atariexpl7]
+    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(10e6)} for _game in
+              _atariexpl7]
 })
-
 
 # MuJoCo
 
@@ -107,7 +134,6 @@ register_benchmark({
     'description': '6 mujoco-like tasks from bullet, 1M steps',
     'tasks': [{'env_id': e, 'trials': 6, 'num_timesteps': int(1e6)} for e in _bulletsmall]
 })
-
 
 # Roboschool
 
@@ -150,7 +176,8 @@ _atari50 = [  # actually 47
 register_benchmark({
     'name': 'Atari50_10M',
     'description': '47 Atari games from Mnih et al. (2013), with pixel observations, 10M timesteps',
-    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(10e6)} for _game in _atari50]
+    'tasks': [{'desc': _game, 'env_id': _game + _ATARI_SUFFIX, 'trials': 2, 'num_timesteps': int(10e6)} for _game in
+              _atari50]
 })
 
 # HER DDPG
@@ -161,4 +188,3 @@ register_benchmark({
     'description': 'Fetch* benchmarks for 1M timesteps',
     'tasks': [{'trials': 6, 'env_id': env_id, 'num_timesteps': int(1e6)} for env_id in _fetch_tasks]
 })
-

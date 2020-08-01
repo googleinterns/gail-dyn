@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from .hopper import HopperURDF
 
 from pybullet_utils import bullet_client
@@ -9,11 +23,13 @@ import math
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 import torch
 from gan.wgan_models import Generator
 from gan import utils
+
 
 class HopperConFEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
@@ -25,8 +41,8 @@ class HopperConFEnv(gym.Env):
                  obs_noise=True,
                  control_skip=10,
                  using_torque_ctrl=True,
-                 correct_obs_dx=True,        # if need to correct dx obs,
-                 train_dyn=True,            # if false, fix dyn and train motor policy
+                 correct_obs_dx=True,  # if need to correct dx obs,
+                 train_dyn=True,  # if false, fix dyn and train motor policy
                  behavior_dir="trained_models_hopper_bullet_3/ppo",
                  behavior_env_name="HopperURDFEnv-v1",
                  dyn_dir="trained_models_Gdyn_hopper_bullet_soft3_0/ppo",
@@ -61,10 +77,10 @@ class HopperConFEnv(gym.Env):
             self.dyn_actor_critic = None
             # load fixed behavior policy
             self.hopper_actor_critic, _, \
-                self.recurrent_hidden_states, \
-                self.masks = utils.load(
-                    behavior_dir, behavior_env_name, False, None        # cpu load
-                )
+            self.recurrent_hidden_states, \
+            self.masks = utils.load(
+                behavior_dir, behavior_env_name, False, None  # cpu load
+            )
         else:
             if dyn_iter:
                 dyn_iter = int(dyn_iter)
@@ -72,28 +88,29 @@ class HopperConFEnv(gym.Env):
             self.hopper_actor_critic = None
             # load fixed dynamics model
             self.dyn_actor_critic, _, \
-                self.recurrent_hidden_states, \
-                self.masks = utils.load(
-                    dyn_dir, dyn_env_name, False, dyn_iter        # cpu load
-                )
+            self.recurrent_hidden_states, \
+            self.masks = utils.load(
+                dyn_dir, dyn_env_name, False, dyn_iter  # cpu load
+            )
 
         self.obs = []
         self.behavior_obs_len = None
         self.behavior_act_len = None
-        self.reset()    # and update init obs
+        self.reset()  # and update init obs
 
         if self.train_dyn:
             assert self.behavior_act_len == len(self.robot.ctrl_dofs)
-            self.action_dim = 4     # see beginning of step() for comment
+            self.action_dim = 4  # see beginning of step() for comment
             self.obs_dim = self.behavior_act_len + self.behavior_obs_len  # see beginning of update_obs() for comment
         else:
             self.action_dim = len(self.robot.ctrl_dofs)
             self.obs_dim = len(self.obs)
 
         self.act = [0.0] * self.action_dim
-        self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
-        obs_dummy = np.array([1.12234567]*self.obs_dim)
-        self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
+        self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
+                                           high=np.array([+1.] * self.action_dim))
+        obs_dummy = np.array([1.12234567] * self.obs_dim)
+        self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
     def reset(self):
         self._p.resetSimulation()
@@ -164,7 +181,7 @@ class HopperConFEnv(gym.Env):
 
         obs_unnorm = np.array(self.obs[:len(self.robot.obs_scaling)]) / self.robot.obs_scaling
 
-        reward = 2.0        # alive bonus
+        reward = 2.0  # alive bonus
         reward += self.get_ave_dx()
         # print("v", self.get_ave_dx())
         reward += -0.1 * np.square(a).sum()
@@ -192,19 +209,19 @@ class HopperConFEnv(gym.Env):
         not_done = (np.abs(dq) < 50).all() and (height > .3) and (height < 1.8)
         # not_done = (np.abs(dq) < 50).all() and (height > .7) and (height < 1.8)
 
-        return self.obs, reward, not not_done, {}       # if train dyn, reward will be overwritten by gail
+        return self.obs, reward, not not_done, {}  # if train dyn, reward will be overwritten by gail
 
     def apply_scale_clip_conf_from_pi(self, con_f):
         # each dim of input is roughly in [-1, 1]
 
         approx_mass = 18.0
-        max_fz = approx_mass * 9.81 * 5    # 5mg        # TODO
+        max_fz = approx_mass * 9.81 * 5  # 5mg        # TODO
         # first dim represents fz
         fz = np.interp(con_f[0], [-0.1, 5], [-5, max_fz])
         # second dim represents fx
-        fx = np.interp(con_f[1], [-5, 5], [-max_fz, max_fz])    # mu<=1.0
+        fx = np.interp(con_f[1], [-5, 5], [-max_fz, max_fz])  # mu<=1.0
         # third dim represents f location in foot coordinate x
-        f_loc_x = np.interp(con_f[2], [-1, 1], [-0.3, 0.3])     # foot length 0.5
+        f_loc_x = np.interp(con_f[2], [-1, 1], [-0.3, 0.3])  # foot length 0.5
         # fourth dim represents f location in foot coordinate z
         f_loc_z = np.interp(con_f[2], [-1, 1], [-0.1, 0.1])  # foot height 0.12
 
@@ -242,7 +259,7 @@ class HopperConFEnv(gym.Env):
             obs_nn = utils.wrap(self.obs, is_cuda=False)
             with torch.no_grad():
                 _, action_nn, _, self.recurrent_hidden_states = self.hopper_actor_critic.act(
-                    obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False     # TODO, det pi
+                    obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False  # TODO, det pi
                 )
             action = utils.unwrap(action_nn, is_cuda=False)
 

@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 # Contributors: Wenhao Yu (wyu68@gatech.edu) and Dong Xu (donghsu@gatech.edu)
 
 import os
@@ -10,12 +24,12 @@ import gym
 import six
 import time
 
-
 from .static_window import *
 
 try:
     import pydart2 as pydart
     from pydart2.gui.trackball import Trackball
+
     pydart.init()
 except ImportError as e:
     raise error.DependencyNotInstalled("{}. (HINT: you need to install pydart2.)".format(e))
@@ -26,7 +40,7 @@ class DartEnv(gym.Env):
     """
 
     def __init__(self, model_paths, frame_skip, observation_size, action_bounds, \
-                 dt=0.002, obs_type="parameter", action_type="continuous", visualize=True, disableViewer=False,\
+                 dt=0.002, obs_type="parameter", action_type="continuous", visualize=True, disableViewer=False, \
                  screen_width=80, screen_height=45):
         assert obs_type in ('parameter', 'image')
         assert action_type in ("continuous", "discrete")
@@ -48,7 +62,7 @@ class DartEnv(gym.Env):
             else:
                 fullpath = os.path.join(os.path.dirname(__file__), "assets", model_path)
             if not path.exists(fullpath):
-                raise IOError("File %s does not exist"%fullpath)
+                raise IOError("File %s does not exist" % fullpath)
             full_paths.append(fullpath)
 
         if full_paths[0][-5:] == '.skel':
@@ -58,7 +72,8 @@ class DartEnv(gym.Env):
             for fullpath in full_paths:
                 self.dart_world.add_skeleton(fullpath)
 
-        self.robot_skeleton = self.dart_world.skeletons[-1] # assume that the skeleton of interest is always the last one
+        self.robot_skeleton = self.dart_world.skeletons[
+            -1]  # assume that the skeleton of interest is always the last one
 
         for jt in range(0, len(self.robot_skeleton.joints)):
             for dof in range(len(self.robot_skeleton.joints[jt].dofs)):
@@ -66,17 +81,17 @@ class DartEnv(gym.Env):
                     self.robot_skeleton.joints[jt].set_position_limit_enforced(True)
 
         self._obs_type = obs_type
-        self.frame_skip= frame_skip
-        self.visualize = visualize  #Show the window or not
+        self.frame_skip = frame_skip
+        self.visualize = visualize  # Show the window or not
         self.disableViewer = disableViewer
 
         # random perturbation
         self.add_perturbation = False
-        self.perturbation_parameters = [0.05, 5, 2] # probability, magnitude, bodyid, duration
+        self.perturbation_parameters = [0.05, 5, 2]  # probability, magnitude, bodyid, duration
         self.perturbation_duration = 40
         self.perturb_force = np.array([0, 0, 0])
 
-        #assert not done
+        # assert not done
         self.obs_dim = observation_size
         self.act_dim = len(action_bounds[0])
 
@@ -84,7 +99,7 @@ class DartEnv(gym.Env):
         if action_type == "continuous":
             self.action_space = spaces.Box(action_bounds[1], action_bounds[0])
 
-        self.track_skeleton_id = -1 # track the last skeleton's com by default
+        self.track_skeleton_id = -1  # track the last skeleton's com by default
 
         # initialize the viewer, get the window size
         # initial here instead of in _render
@@ -94,7 +109,7 @@ class DartEnv(gym.Env):
         self._get_viewer()
         # Give different observation space for different kind of envs
         if self._obs_type == 'parameter':
-            high = np.inf*np.ones(self.obs_dim)
+            high = np.inf * np.ones(self.obs_dim)
             low = -high
             self.observation_space = spaces.Box(low, high)
         elif self._obs_type == 'image':
@@ -105,13 +120,12 @@ class DartEnv(gym.Env):
 
         self._seed()
 
-        #self.viewer = None
+        # self.viewer = None
 
         self.metadata = {
             'render.modes': ['human', 'rgb_array'],
-            'video.frames_per_second' : int(np.round(1.0 / self.dt))
+            'video.frames_per_second': int(np.round(1.0 / self.dt))
         }
-
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -147,8 +161,8 @@ class DartEnv(gym.Env):
         self.robot_skeleton.set_velocities(qvel)
 
     def set_state_vector(self, state):
-        self.robot_skeleton.set_positions(state[0:int(len(state)/2)])
-        self.robot_skeleton.set_velocities(state[int(len(state)/2):])
+        self.robot_skeleton.set_positions(state[0:int(len(state) / 2)])
+        self.robot_skeleton.set_velocities(state[int(len(state) / 2):])
 
     @property
     def dt(self):
@@ -175,7 +189,7 @@ class DartEnv(gym.Env):
 
     def _render(self, mode='human', close=False):
         if not self.disableViewer:
-            self._get_viewer().scene.tb.trans[0] = -self.dart_world.skeletons[self.track_skeleton_id].com()[0]*1
+            self._get_viewer().scene.tb.trans[0] = -self.dart_world.skeletons[self.track_skeleton_id].com()[0] * 1
         if close:
             if self.viewer is not None:
                 self._get_viewer().close()
@@ -192,8 +206,8 @@ class DartEnv(gym.Env):
     def getViewer(self, sim, title=None):
         # glutInit(sys.argv)
         win = StaticGLUTWindow(sim, title)
-        win.scene.add_camera(Trackball(theta=-45.0, phi = 0.0, zoom=0.1), 'gym_camera')
-        win.scene.set_camera(win.scene.num_cameras()-1)
+        win.scene.add_camera(Trackball(theta=-45.0, phi=0.0, zoom=0.1), 'gym_camera')
+        win.scene.set_camera(win.scene.num_cameras() - 1)
 
         # to add speed,
         if self._obs_type == 'image':

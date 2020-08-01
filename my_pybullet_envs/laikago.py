@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 # DoF index, DoF (joint) Name, joint type (0 means hinge joint), joint lower and upper limits, child link of this joint
 # (0, b'FR_hip_motor_2_chassis_joint', 0) -0.873 1.0472 b'FR_hip_motor'
 # (1, b'FR_upper_leg_2_hip_motor_joint', 0) -1.3 3.4 b'FR_upper_leg'
@@ -25,6 +39,7 @@ import math
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
@@ -35,7 +50,7 @@ class LaikagoBullet:
                  act_noise=True,
                  time_step=1. / 500,
                  np_random=None,
-                 using_torque_ctrl=True             # TODO: pos control
+                 using_torque_ctrl=True  # TODO: pos control
                  ):
 
         self.init_noise = init_noise
@@ -46,29 +61,29 @@ class LaikagoBullet:
         self.np_random = np_random
         self.using_torque_ctrl = using_torque_ctrl
 
-        self.base_init_pos = np.array([0, 0, .5])         # starting position
-        self.base_init_euler = np.array([1.5708, 0, 1.5708])         # starting orientation
+        self.base_init_pos = np.array([0, 0, .5])  # starting position
+        self.base_init_euler = np.array([1.5708, 0, 1.5708])  # starting orientation
 
         self.feet = [3, 7, 11, 15]
 
-        self.max_forces = [30.0] * 12       # joint torque limits    TODO
+        self.max_forces = [30.0] * 12  # joint torque limits    TODO
 
         # self.max_forces = [30.0] * 6 + [20.0] * 6
 
-        self.init_q = [0.0, 0.0, -0.5] * 4                          # TODO
+        self.init_q = [0.0, 0.0, -0.5] * 4  # TODO
         self.ctrl_dofs = []
 
         self._p = None  # bullet session to connect to
-        self.go_id = -2      # bullet id for the loaded humanoid, to be overwritten
-        self.torque = None      # if using torque control, the current torque vector to apply
+        self.go_id = -2  # bullet id for the loaded humanoid, to be overwritten
+        self.torque = None  # if using torque control, the current torque vector to apply
 
-        self.ll = None      # stores joint lower limits
-        self.ul = None      # stores joint upper limits
+        self.ll = None  # stores joint lower limits
+        self.ul = None  # stores joint upper limits
 
     def reset(
-             self,
-             bullet_client
-             ):
+            self,
+            bullet_client
+    ):
         self._p = bullet_client
         self.go_id = self._p.loadURDF(os.path.join(currentdir,
                                                    "assets/laikago/laikago_toes_limits.urdf"),
@@ -129,7 +144,7 @@ class LaikagoBullet:
     def soft_reset(
             self,
             bullet_client
-            ):
+    ):
         self._p = bullet_client
 
         self._p.resetBaseVelocity(self.go_id, [0., 0, 0], [0., 0, 0])
@@ -165,7 +180,7 @@ class LaikagoBullet:
 
         # 10% white noise
         if self.act_noise:
-            self.torque = self.perturb(self.torque, np.array(self.max_forces)/10.0)
+            self.torque = self.perturb(self.torque, np.array(self.max_forces) / 10.0)
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.go_id,
@@ -246,8 +261,7 @@ class LaikagoBullet:
             if y < feet_min_y:
                 feet_min_y = y
         return (feet_min_x - 0.05 < root_com[0]) and (root_com[0] < feet_max_x + 0.05) \
-            and (feet_min_y - 0.05 < root_com[1]) and (root_com[1] < feet_max_y + 0.05)
-
+               and (feet_min_y - 0.05 < root_com[1]) and (root_com[1] < feet_max_y + 0.05)
 
 # if __name__ == "__main__":
 #     import pybullet as p

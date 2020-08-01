@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from .hopper import HopperURDF
 
 from pybullet_utils import bullet_client
@@ -9,6 +23,7 @@ import math
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
@@ -48,14 +63,15 @@ class HopperURDFEnv(gym.Env):
 
         self.floor_id = None
 
-        obs = self.reset()    # and update init obs
+        obs = self.reset()  # and update init obs
 
         self.action_dim = len(self.robot.ctrl_dofs)
         self.act = [0.0] * len(self.robot.ctrl_dofs)
-        self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
+        self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
+                                           high=np.array([+1.] * self.action_dim))
         self.obs_dim = len(obs)
-        obs_dummy = np.array([1.12234567]*self.obs_dim)
-        self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
+        obs_dummy = np.array([1.12234567] * self.obs_dim)
+        self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
     def reset(self):
         self._p.resetSimulation()
@@ -67,7 +83,7 @@ class HopperURDFEnv(gym.Env):
         # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
         self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)     # TODO
+        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)  # TODO
         self._p.changeDynamics(self.floor_id, -1, restitution=.2)
 
         self.robot.reset(self._p)
@@ -100,7 +116,7 @@ class HopperURDFEnv(gym.Env):
 
         x_1 = self._p.getJointState(self.robot.hopper_id, 0)[0]
 
-        reward = 2.0        # alive bonus
+        reward = 2.0  # alive bonus
         reward += (x_1 - x_0) / (self.control_skip * self._ts)
         # print("v", (x_1 - x_0) / (self.control_skip * self._ts))
         reward += -0.1 * np.square(a).sum()

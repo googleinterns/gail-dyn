@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 # DoF index, DoF (joint) Name, joint type (0 means hinge joint), joint lower and upper limits, child link of this joint
 # (0, b'rootx', 1, 7, 6, 1, 0.0, 0.0, -200.0, 200.0, 10000.0, 100.0, b'link1_2', (1.0, 0.0, 0.0),
 # (1, b'rootz', 1, 8, 7, 1, 0.0, 0.0, -200.0, 200.0, 10000.0, 100.0, b'link1_3', (0.0, 0.0, 1.0),
@@ -15,6 +29,7 @@ from gan import utils
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
@@ -23,7 +38,7 @@ class HopperURDF:
                  init_noise=True,
                  time_step=1. / 500,
                  np_random=None,
-                 box_shape=True             # TODO: capsule false
+                 box_shape=True  # TODO: capsule false
                  ):
 
         self.init_noise = init_noise
@@ -31,30 +46,30 @@ class HopperURDF:
         self._ts = time_step
         self.np_random = np_random
 
-        self.base_init_pos = np.array([0., 0, 1.5])         # starting position
-        self.base_init_euler = np.array([0., 0, 0])         # starting orientation
+        self.base_init_pos = np.array([0., 0, 1.5])  # starting position
+        self.base_init_euler = np.array([0., 0, 0])  # starting orientation
 
-        self.max_forces = [200.0] * 3       # joint torque limits
-        self.obs_scaling = np.array([1.0] * 5 + [0.1] * 6)      # self scaling of obs
+        self.max_forces = [200.0] * 3  # joint torque limits
+        self.obs_scaling = np.array([1.0] * 5 + [0.1] * 6)  # self scaling of obs
         self.ctrl_dofs = [3, 4, 5]
-        self.root_dofs = [0, 1, 2]          # uncontrollable 2d xyr root
+        self.root_dofs = [0, 1, 2]  # uncontrollable 2d xyr root
         self.n_total_dofs = len(self.ctrl_dofs) + len(self.root_dofs)
         assert len(self.max_forces) == len(self.ctrl_dofs)
 
         self._p = None  # bullet session to connect to
-        self.hopper_id = -2      # bullet id for the loaded humanoid, to be overwritten
-        self.torque = None      # if using torque control, the current torque vector to apply
+        self.hopper_id = -2  # bullet id for the loaded humanoid, to be overwritten
+        self.torque = None  # if using torque control, the current torque vector to apply
 
-        self.ll = None      # stores joint lower limits
-        self.ul = None      # stores joint upper limits
+        self.ll = None  # stores joint lower limits
+        self.ul = None  # stores joint upper limits
 
         self.last_x = None
         self.x = None
 
     def reset(
-             self,
-             bullet_client
-             ):
+            self,
+            bullet_client
+    ):
         self._p = bullet_client
         self.hopper_id = self._p.loadURDF(os.path.join(currentdir,
                                                        "assets/hopper_my_box.urdf"),

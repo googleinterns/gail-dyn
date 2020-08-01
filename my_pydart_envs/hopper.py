@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import numpy as np
 from gym import utils
 from . import dart_env
@@ -5,7 +19,7 @@ from . import dart_env
 
 class DartHopperEnv(dart_env.DartEnv, utils.EzPickle):
     def __init__(self):
-        self.control_bounds = np.array([[1.0, 1.0, 1.0],[-1.0, -1.0, -1.0]])
+        self.control_bounds = np.array([[1.0, 1.0, 1.0], [-1.0, -1.0, -1.0]])
         self.action_scale = 200
         obs_dim = 11
 
@@ -38,7 +52,7 @@ class DartHopperEnv(dart_env.DartEnv, utils.EzPickle):
 
         posbefore = self.robot_skeleton.q[0]
         self.advance(a)
-        posafter,ang = self.robot_skeleton.q[0,2]
+        posafter, ang = self.robot_skeleton.q[0, 2]
         height = self.robot_skeleton.bodynodes[2].com()[1]
 
         joint_limit_penalty = 0

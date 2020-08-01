@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from .laikago import LaikagoBullet
 
 from pybullet_utils import bullet_client
@@ -9,6 +23,7 @@ import math
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
@@ -61,15 +76,16 @@ class LaikagoBulletEnv(gym.Env):
 
         self.floor_id = None
 
-        self.reset_counter = 200    # do a hard reset first
-        obs = self.reset()    # and update init obs
+        self.reset_counter = 200  # do a hard reset first
+        obs = self.reset()  # and update init obs
 
         self.action_dim = len(self.robot.ctrl_dofs)
         self.act = [0.0] * len(self.robot.ctrl_dofs)
-        self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
+        self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
+                                           high=np.array([+1.] * self.action_dim))
         self.obs_dim = len(obs)
-        obs_dummy = np.array([1.12234567]*self.obs_dim)
-        self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
+        obs_dummy = np.array([1.12234567] * self.obs_dim)
+        self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
     def reset(self):
 
@@ -126,7 +142,7 @@ class LaikagoBulletEnv(gym.Env):
         x_1 = root_pos[0]
 
         not_done = True
-        reward = self.ab        # alive bonus
+        reward = self.ab  # alive bonus
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
         # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
@@ -151,7 +167,7 @@ class LaikagoBulletEnv(gym.Env):
         reward += -y_1 * 0.5
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
-        reward += np.minimum(height-0.3, 0.2) * 12
+        reward += np.minimum(height - 0.3, 0.2) * 12
 
         in_support = self.robot.is_root_com_in_support()
 
@@ -190,11 +206,10 @@ class LaikagoBulletEnv(gym.Env):
             else:
                 obs.extend([-1.0])
 
-        obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])   # TODO
+        obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
 
         # print(obs)
         return obs
-
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

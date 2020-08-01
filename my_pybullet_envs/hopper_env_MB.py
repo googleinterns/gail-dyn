@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from .hopper import HopperURDF
 
 from pybullet_utils import bullet_client
@@ -9,11 +23,13 @@ import math
 
 import os
 import inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 import torch
 from gan.wgan_models import Generator
 from gan import utils
+
 
 class HopperURDFEnvMB(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
@@ -25,7 +41,7 @@ class HopperURDFEnvMB(gym.Env):
                  obs_noise=True,
                  control_skip=10,
                  using_torque_ctrl=True,
-                 correct_obs_dx=True,        # if need to correct dx obs,
+                 correct_obs_dx=True,  # if need to correct dx obs,
                  use_gen_dyn=False,
                  gen_dyn_path=None,
                  soft_floor_env=False,
@@ -60,14 +76,15 @@ class HopperURDFEnvMB(gym.Env):
         self.floor_id = None
 
         self.obs = []
-        self.reset()    # and update init obs
+        self.reset()  # and update init obs
 
         self.action_dim = len(self.robot.ctrl_dofs)
         self.act = [0.0] * len(self.robot.ctrl_dofs)
-        self.action_space = gym.spaces.Box(low=np.array([-1.]*self.action_dim), high=np.array([+1.]*self.action_dim))
+        self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
+                                           high=np.array([+1.] * self.action_dim))
         self.obs_dim = len(self.obs)
-        obs_dummy = np.array([1.12234567]*self.obs_dim)
-        self.observation_space = gym.spaces.Box(low=-np.inf*obs_dummy, high=np.inf*obs_dummy)
+        obs_dummy = np.array([1.12234567] * self.obs_dim)
+        self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
         self.gen_dyn = None
         if self.use_gen_dyn:
@@ -85,7 +102,7 @@ class HopperURDFEnvMB(gym.Env):
         # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
         self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)     # TODO
+        self._p.changeDynamics(self.floor_id, -1, lateralFriction=1.0)  # TODO
         self._p.changeDynamics(self.floor_id, -1, restitution=.2)
 
         self.robot.reset(self._p)
@@ -98,7 +115,7 @@ class HopperURDFEnvMB(gym.Env):
                 self._p.changeDynamics(self.robot.hopper_id, ind, contactDamping=100.0, contactStiffness=600.0)
 
         if self.low_torque_env:
-            self.robot.max_forces[2] = 200/1.6      # 1.6 for policy 4, 2.0 for policy 3
+            self.robot.max_forces[2] = 200 / 1.6  # 1.6 for policy 4, 2.0 for policy 3
 
         #     self._p.changeDynamics(self.robot.hopper_id, ind, lateralFriction=1.0)
         #     self._p.changeDynamics(self.robot.hopper_id, ind, restitution=.2)
@@ -132,8 +149,8 @@ class HopperURDFEnvMB(gym.Env):
 
             # gen_input = list(self.obs) + list(a) + [0.0] * (11+3)
 
-            gen_input = list(self.obs) + list(a) + list(np.random.normal(0, 1, 14))       # TODO
-            gen_input = utils.wrap(gen_input, is_cuda=False)      # TODO
+            gen_input = list(self.obs) + list(a) + list(np.random.normal(0, 1, 14))  # TODO
+            gen_input = utils.wrap(gen_input, is_cuda=False)  # TODO
             gen_output = self.gen_dyn(gen_input)
             gen_output = utils.unwrap(gen_output, is_cuda=False)
 
@@ -153,7 +170,7 @@ class HopperURDFEnvMB(gym.Env):
                 self.obs = utils.perturb(self.obs, 0.1, self.np_random)
             self.timer += self.control_skip
 
-        reward = 2.0        # alive bonus
+        reward = 2.0  # alive bonus
         reward += self.get_ave_dx()
         # print("v", self.get_ave_dx())
         reward += -0.1 * np.square(a).sum()

@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 # Contributors: Wenhao Yu (wyu68@gatech.edu) and Dong Xu (donghsu@gatech.edu)
 
 import OpenGL.GL as GL
@@ -43,7 +57,7 @@ class StaticGLUTWindow(GLUTWindow):
                                GL.GL_RGBA,
                                GL.GL_UNSIGNED_BYTE)
         img = np.frombuffer(data, dtype=np.uint8)
-        return img.reshape(self.window_size[1], self.window_size[0], 4)[::-1,:,0:3]
+        return img.reshape(self.window_size[1], self.window_size[0], 4)[::-1, :, 0:3]
 
     def mykeyboard(self, key, x, y):
         keycode = ord(key)
@@ -65,8 +79,8 @@ class StaticGLUTWindow(GLUTWindow):
                                  GLUT.GLUT_ALPHA |
                                  GLUT.GLUT_DEPTH)
         if _width is not None and _height is not None:
-            GLUT.glutInitWindowSize(_width,_height)
-            #self.resizeGL(_width, _height) # this line crashes my program ??
+            GLUT.glutInitWindowSize(_width, _height)
+            # self.resizeGL(_width, _height) # this line crashes my program ??
         else:
             GLUT.glutInitWindowSize(*self.window_size)
         GLUT.glutInitWindowPosition(0, 0)

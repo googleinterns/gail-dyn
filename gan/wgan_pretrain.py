@@ -1,3 +1,17 @@
+#  Copyright 2020 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import argparse
 import os
 import numpy as np
@@ -54,7 +68,7 @@ except OSError:
 
 # img_shape = (opt.channels, opt.img_size, opt.img_size)
 
-gen_input_dim = 11+3
+gen_input_dim = 11 + 3
 gen_latent_dim = gen_input_dim
 gen_output_dim = 11
 
@@ -70,7 +84,6 @@ if cuda:
     generator.cuda()
     discriminator.cuda()
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-
 
 # # Configure data loader
 # def combine_gen_x_y_from_pickle(pathname):
@@ -164,7 +177,7 @@ for epoch in range(opt.n_epochs):
         gen_in = torch.cat((real_xys[:, :gen_input_dim], z), dim=1)
 
         # Generate a batch of images
-        fake_ys = generator(gen_in).detach()        # important, loss do not back-prop into gen here
+        fake_ys = generator(gen_in).detach()  # important, loss do not back-prop into gen here
         fake_xys = torch.cat((real_xys[:, :gen_input_dim], fake_ys), dim=1)
         # Adversarial loss
         loss_D = -torch.mean(discriminator(real_xys)) + torch.mean(discriminator(fake_xys))
@@ -205,7 +218,7 @@ for epoch in range(opt.n_epochs):
         batches_done += 1
 
     if epoch % 10 == 0:
-        g_path = os.path.join(opt.train_model_dir, "G_"+str(epoch)+".pt")
+        g_path = os.path.join(opt.train_model_dir, "G_" + str(epoch) + ".pt")
         torch.save(generator.state_dict(), g_path)
-        d_path = os.path.join(opt.train_model_dir, "D_"+str(epoch)+".pt")
+        d_path = os.path.join(opt.train_model_dir, "D_" + str(epoch) + ".pt")
         torch.save(discriminator.state_dict(), d_path)

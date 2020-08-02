@@ -29,7 +29,7 @@ import multiprocessing as mp
 import numpy as np
 from .vec_env import VecEnv, CloudpickleWrapper, clear_mpi_env_vars
 import ctypes
-from baselines import logger
+from a2c_ppo_acktr.baselines import logger
 
 from .util import dict_to_obs, obs_space_info, obs_to_dict
 

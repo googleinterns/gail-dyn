@@ -28,8 +28,8 @@ import os
 import numpy as np
 import pandas
 from collections import defaultdict, namedtuple
-from baselines.bench import monitor
-from baselines.logger import read_json, read_csv
+from a2c_ppo_acktr.baselines.bench import monitor
+from a2c_ppo_acktr.baselines.logger import read_json, read_csv
 
 
 def smooth(y, radius, mode='two_sided', valid_only=False):

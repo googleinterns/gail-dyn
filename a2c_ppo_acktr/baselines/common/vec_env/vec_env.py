@@ -25,7 +25,7 @@ import contextlib
 import os
 from abc import ABC, abstractmethod
 
-from baselines.common.tile_images import tile_images
+from a2c_ppo_acktr.baselines.common.tile_images import tile_images
 
 
 class AlreadySteppingError(Exception):

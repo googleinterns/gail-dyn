@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['svg.fonttype'] = 'none'
 
-from baselines.common import plot_util
+from a2c_ppo_acktr.baselines.common import plot_util
 
 X_TIMESTEPS = 'timesteps'
 X_EPISODES = 'episodes'
@@ -103,7 +103,7 @@ def plot_results(dirs, num_timesteps=10e6, xaxis=X_TIMESTEPS, yaxis=Y_REWARD, ti
 
 
 # Example usage in jupyter-notebook
-# from baselines.results_plotter import plot_results
+# from a2c_ppo_acktr.baselines.results_plotter import plot_results
 # %matplotlib inline
 # plot_results("./log")
 # Here ./log is a directory containing the monitor.csv files

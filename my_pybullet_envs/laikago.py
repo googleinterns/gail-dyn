@@ -63,7 +63,7 @@ class LaikagoBullet:
 
         self.max_forces = [30.0] * 12  # joint torque limits    TODO
 
-        self.obs_scaling = ...      # TODO
+        self.obs_scaling = np.array([0.2]*3 + [0.1]*3 + [1.0]*(6+12+12) + [0.1]*12)
 
         # self.max_forces = [30.0] * 6 + [20.0] * 6
 
@@ -192,19 +192,16 @@ class LaikagoBullet:
         return list(link_com), list(link_quat)
 
     def get_robot_observation(self):
-
         obs = []
 
         # root dq (6)
         base_vel, base_ang_vel = self._p.getBaseVelocity(self.go_id)
-        base_vel = np.clip(np.array(base_vel) / 5.0, -1, 1)
-        base_ang_vel = np.clip(np.array(base_ang_vel) / 10.0, -1, 1)
-
         obs.extend(base_vel)
         obs.extend(base_ang_vel)
 
         # root q (without root x)
         # y could be unbounded
+        # orn in quat
         root_pos, root_orn = self.get_link_com_xyz_orn(-1)
         root_x, root_y, root_z = root_pos
         obs.extend(root_pos[1:])
@@ -221,10 +218,10 @@ class LaikagoBullet:
 
         # non-root joint q/dq
         q, dq = self.get_q_dq(self.ctrl_dofs)
-        obs.extend(list(q))
-        obs.extend(list(np.clip(dq / 10.0, -2, 2)))
+        obs.extend(q)
+        obs.extend(dq)
 
-        # print(np.array(obs))
+        obs = np.array(obs) * self.obs_scaling
         return list(obs)
 
     def is_root_com_in_support(self):

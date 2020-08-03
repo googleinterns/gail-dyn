@@ -202,12 +202,12 @@ class LaikagoBulletEnv(gym.Env):
     def get_extended_observation(self):
         obs = self.robot.get_robot_observation()
 
-        for foot in self.robot.feet:
-            cps = self._p.getContactPoints(self.robot.go_id, self.floor_id, foot, -1)
-            if len(cps) > 0:
-                obs.extend([1.0])
-            else:
-                obs.extend([-1.0])
+        # for foot in self.robot.feet:
+        #     cps = self._p.getContactPoints(self.robot.go_id, self.floor_id, foot, -1)
+        #     if len(cps) > 0:
+        #         obs.extend([1.0])
+        #     else:
+        #         obs.extend([-1.0])
 
         obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
 

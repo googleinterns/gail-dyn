@@ -63,7 +63,7 @@ class LaikagoBullet:
 
         self.max_forces = [30.0] * 12  # joint torque limits    TODO
 
-        self.obs_scaling = np.array([0.2]*3 + [0.1]*3 + [1.0]*(6+12+12) + [0.1]*12)
+        self.obs_scaling = np.array([0.2]*3 + [0.1]*3 + [1.0]*(6+12+12) + [0.1]*12 + [1.0]*4)
 
         # self.max_forces = [30.0] * 6 + [20.0] * 6
 
@@ -208,8 +208,13 @@ class LaikagoBullet:
         obs.extend(root_orn)
 
         # feet (offset by root)
+        contact_bits = []
         for link in self.feet:
             pos, _ = self.get_link_com_xyz_orn(link, FK=1)
+            if pos[2] > 0.03:
+                contact_bits.extend([-1.0])
+            else:
+                contact_bits.extend([1.0])
             # print(pos)
             pos[0] -= root_x
             pos[1] -= root_y
@@ -220,6 +225,8 @@ class LaikagoBullet:
         q, dq = self.get_q_dq(self.ctrl_dofs)
         obs.extend(q)
         obs.extend(dq)
+
+        obs.extend(contact_bits)
 
         obs = np.array(obs) * self.obs_scaling
         return list(obs)

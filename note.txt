@@ -200,3 +200,34 @@ Maybe large a range is also important?
 
 # gail ephoch matter??
 
+# put a hold on longer input window
+# try laikago with new obs space first
+    # root z, rpy (exclude y for now, decide what to do with z later)
+        # need z for dynamic markovian
+    # base linear & *angular* vels (change ang vel to history of info later)
+    # q and dq
+    # the only change was y, TODO: exclude y, keep it for now
+# TODO: think about root vel smoothing later
+# TODO: remove contact bits
+
+TODO: decrease min height for termination
+check the list in slides
+
+TODO: hardcoded dim in main.py
+
+TODO: put reward calc in if, accelerate later on
+
+# TODO: no moment arm for laika contacts for now.
+
+
+# obs space
+# env action space
+
+# is it reasonable to assume behavior pi trained in sim will walk several steps before falling over
+# in sim-to-real? (reason asking is that I need to tune stiffness for different policies to create such a scenario)
+
+
+# choose to commit suicide
+# turn off alive pen for now.
+
+

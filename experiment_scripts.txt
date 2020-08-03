@@ -607,9 +607,66 @@ python enjoy.py --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_b
 --soft_floor_env 1 --src-env-name "HopperURDFEnv-v1"
 
 # new way of running after refactor
-python a2c_ppo_acktr.main --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+python -m a2c_ppo_acktr.main --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
 --num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
 --num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
 --use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt.pkl" \
 --save-dir trained_models_tmptmp  --seed 40027 --gail-traj-num 100 --train_dyn 1 \
 --gail-epoch 15 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+
+# GAIL Pipeline for Laika:
+1. collect trajs from target env:
+# self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
+# not_done = (np.abs(dq) < 90).all() and (height > 0.3)
+python -m a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1" --load-dir trained_models_laika_bullet_12/ppo --render 0 \
+--save-traj 1 --save-path "./laika_12_softfloor_n200.pkl" --enlarge-act-range 1 --non-det 1 \
+--act_noise 0 --obs_noise 0
+
+2. train with gail dyn (ent 0.01)
+# alive pen 0.5
+python -m a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_0  --seed 50000 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+python -m a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_1  --seed 50001 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+python -m a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_2  --seed 50002 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+python -m a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" --load-dir trained_models_Gdyn_laika_bullet_soft12gt_0/ppo \
+--render 1 --non-det 1 --train_dyn 1 --behavior_dir trained_models_laika_bullet_12/ppo \
+--behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0 --load-dis 0 --seed 1099
+
+# choose to commit suicide
+# turn off alive pen for now.
+# re-run
+
+0/1 same
+
+2, gail-epoch 20 -> 5
+python -m a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_2  --seed 50002 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+
+# try 2mg

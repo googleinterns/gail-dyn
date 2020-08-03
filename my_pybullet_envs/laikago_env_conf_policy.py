@@ -20,6 +20,7 @@ import time
 import gym, gym.utils.seeding, gym.spaces
 import numpy as np
 import math
+import torch
 from gan import utils
 
 import os
@@ -28,7 +29,7 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-class LaikagoBulletEnv(gym.Env):
+class LaikagoConFEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
     def __init__(self,
@@ -43,7 +44,14 @@ class LaikagoBulletEnv(gym.Env):
                  energy_weight=0.05,
                  jl_weight=0.5,
                  ab=0,
-                 q_pen_weight=0.3
+                 q_pen_weight=0.3,
+
+                 train_dyn=True,  # if false, fix dyn and train motor policy
+                 behavior_dir="trained_models_laika_bullet_12/ppo",
+                 behavior_env_name="LaikagoBulletEnv-v1",
+                 dyn_dir="",
+                 dyn_env_name="LaikagoConFEnv-v1",
+                 dyn_iter=None
 
                  ):
 
@@ -60,6 +68,8 @@ class LaikagoBulletEnv(gym.Env):
         self.ab = ab
         self.q_pen_weight = q_pen_weight
 
+        self.train_dyn = train_dyn
+
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
         else:
@@ -73,16 +83,43 @@ class LaikagoBulletEnv(gym.Env):
         self.viewer = None
         self.timer = 0
 
-        self.floor_id = None
+        if self.train_dyn:
+            self.dyn_actor_critic = None
+            # load fixed behavior policy
+            self.go_actor_critic, _, \
+            self.recurrent_hidden_states, \
+            self.masks = utils.load(
+                behavior_dir, behavior_env_name, False, None  # cpu load
+            )
+        else:
+            if dyn_iter:
+                dyn_iter = int(dyn_iter)
+            # train motor policy
+            self.go_actor_critic = None
+            # load fixed dynamics model
+            self.dyn_actor_critic, _, \
+            self.recurrent_hidden_states, \
+            self.masks = utils.load(
+                dyn_dir, dyn_env_name, False, dyn_iter  # cpu load
+            )
 
         self.reset_counter = 50  # do a hard reset first
-        obs = self.reset()  # and update init obs
+        self.obs = []
+        self.behavior_obs_len = None
+        self.behavior_act_len = None
+        self.reset()  # and update init obs
 
-        self.action_dim = len(self.robot.ctrl_dofs)
-        self.act = [0.0] * len(self.robot.ctrl_dofs)
+        if self.train_dyn:
+            assert self.behavior_act_len == len(self.robot.ctrl_dofs)
+            self.action_dim = 12  # see beginning of step() for comment
+            self.obs_dim = self.behavior_act_len + self.behavior_obs_len  # see beginning of update_obs() for comment
+        else:
+            self.action_dim = len(self.robot.ctrl_dofs)
+            self.obs_dim = len(self.obs)
+
+        self.act = [0.0] * self.action_dim
         self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
                                            high=np.array([+1.] * self.action_dim))
-        self.obs_dim = len(obs)
         obs_dummy = np.array([1.12234567] * self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
@@ -100,7 +137,7 @@ class LaikagoBulletEnv(gym.Env):
             self._p.setPhysicsEngineParameter(numSolverIterations=100)
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
-            self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+            # self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
             # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=300.0)     # TODO
             # # self._p.changeDynamics(self.floor_id, -1, contactStiffness=3.0)
 
@@ -111,40 +148,47 @@ class LaikagoBulletEnv(gym.Env):
             #     # self._p.changeDynamics(self.robot.go_id, ind, contactStiffness=3.0)
 
         self._p.stepSimulation()
-
-        # # self.robot.soft_reset(self._p)
-        # q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        # print("dq after reset", dq)
-        # input("press enter")
-
         self.timer = 0
-        obs = self.get_extended_observation()
+        self.update_extended_observation()
 
-        return np.array(obs)
+        return self.obs
 
     def step(self, a):
+
+        if self.train_dyn:
+            # TODO: currently for laika, env_action is 12D, 4 feet 3D without wrench
+            env_action = a
+            robo_action = self.obs[self.behavior_obs_len:]
+        else:
+            robo_action = a
+            env_pi_obs = np.concatenate((self.obs, robo_action))
+
+            env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=False)
+            with torch.no_grad():
+                _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
+                    env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
+                )
+            env_action = utils.unwrap(env_action_nn, is_cuda=False)
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
 
-        a = np.clip(a, -1.0, 1.0)
+        robo_action = np.clip(robo_action, -1.0, 1.0)
         if self.act_noise:
-            a = utils.perturb(a, 0.05, self.np_random)
+            robo_action = utils.perturb(robo_action, 0.05, self.np_random)
 
         for _ in range(self.control_skip):
-            # action is in not -1,1
-            if a is not None:
-                self.act = a
-                self.robot.apply_action(a)
+            self.robot.apply_action(robo_action)
+            self.apply_scale_clip_conf_from_pi(env_action)
             self._p.stepSimulation()
             if self.render:
-                time.sleep(self._ts * 1.5)
+                time.sleep(self._ts * 0.5)
             self.timer += 1
+        self.update_extended_observation()
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_1 = root_pos[0]
 
-        not_done = True
         reward = self.ab  # alive bonus
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
@@ -172,7 +216,7 @@ class LaikagoBulletEnv(gym.Env):
         height = root_pos[2]
         reward += np.minimum(height - 0.3, 0.2) * 12
 
-        in_support = self.robot.is_root_com_in_support()
+        # in_support = self.robot.is_root_com_in_support()
 
         # print("______")
         # print(in_support)
@@ -194,28 +238,51 @@ class LaikagoBulletEnv(gym.Env):
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
         # not_done = True
 
-        return self.get_extended_observation(), reward, not not_done, {}
+        return self.obs, reward, not not_done, {}
+
+    def apply_scale_clip_conf_from_pi(self, con_f):
+
+        approx_mass = 26.0
+        max_fz = approx_mass * 9.81 * 5  # 5mg        # TODO
+
+        for foot_ind, link in enumerate(self.robot.feet):
+            this_con_f = con_f[foot_ind*3: (foot_ind+1)*3]
+            # first dim represents fz
+            fz = np.interp(this_con_f[0], [-0.1, 5], [-5, max_fz])
+            # second dim represents fx
+            fx = np.interp(this_con_f[1], [-5, 5], [-1.2*max_fz, 1.2*max_fz])  # mu<=1.2
+            # third dim represents fy
+            fy = np.interp(this_con_f[2], [-5, 5], [-1.2*max_fz, 1.2*max_fz])  # mu<=1.2
+
+            utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
+                                                            [fx, fy, fz],
+                                                            [0, 0, 0],
+                                                            self._p)
 
     def get_dist(self):
         return self.robot.get_link_com_xyz_orn(-1)[0][0]
 
-    def get_extended_observation(self):
-        obs = self.robot.get_robot_observation()
+    def update_extended_observation(self):
+        self.obs = self.robot.get_robot_observation()
 
-        # for foot in self.robot.feet:
-        #     cps = self._p.getContactPoints(self.robot.go_id, self.floor_id, foot, -1)
-        #     if len(cps) > 0:
-        #         obs.extend([1.0])
-        #     else:
-        #         obs.extend([-1.0])
-
-        obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
+        self.obs = np.concatenate((self.obs, [np.minimum(self.timer / 500, self.max_tar_vel)]))  # TODO
 
         if self.obs_noise:
-            obs = utils.perturb(obs, 0.1, self.np_random)
+            self.obs = utils.perturb(self.obs, 0.1, self.np_random)
 
-        # print(obs)
-        return obs
+        if self.train_dyn:
+            self.behavior_obs_len = len(self.obs)
+
+            obs_nn = utils.wrap(self.obs, is_cuda=False)
+            with torch.no_grad():
+                _, action_nn, _, self.recurrent_hidden_states = self.go_actor_critic.act(
+                    obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False  # TODO, det pi
+                )
+            action = utils.unwrap(action_nn, is_cuda=False)
+
+            self.behavior_act_len = len(action)
+
+            self.obs = np.concatenate((self.obs, action))
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -228,7 +295,7 @@ class LaikagoBulletEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 3
+        distance = 5
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

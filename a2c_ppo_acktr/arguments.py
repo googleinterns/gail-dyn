@@ -198,6 +198,11 @@ def get_args():
         type=int,
         default=20,
         help='gail expert trajectory downsample frequency (default: 20)')
+    parser.add_argument(
+        '--gail-dis-hdim',
+        type=int,
+        default=100,
+        help='gail D hidden dim (default: 100)')
 
     args, unknown = parser.parse_known_args()  # this is an 'internal' method
 

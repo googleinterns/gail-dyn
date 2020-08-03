@@ -26,7 +26,7 @@ import os
 import torch
 import torch.nn as nn
 
-from a2c_ppo_acktr.envs import VecNormalize
+from third_party.a2c_ppo_acktr.envs import VecNormalize
 
 
 # Get a render function

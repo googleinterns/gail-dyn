@@ -27,7 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from a2c_ppo_acktr.utils import AddBias
+from third_party.a2c_ppo_acktr.utils import AddBias
 
 
 # TODO: In order to make this code faster:

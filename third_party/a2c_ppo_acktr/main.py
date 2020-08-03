@@ -34,12 +34,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from a2c_ppo_acktr import algo, utils
-from a2c_ppo_acktr.algo import gail
-from a2c_ppo_acktr.arguments import get_args
-from a2c_ppo_acktr.envs import make_vec_envs
-from a2c_ppo_acktr.model import Policy
-from a2c_ppo_acktr.storage import RolloutStorage
+from third_party.a2c_ppo_acktr import algo, utils
+from third_party.a2c_ppo_acktr.algo import gail
+from third_party.a2c_ppo_acktr.arguments import get_args
+from third_party.a2c_ppo_acktr.envs import make_vec_envs
+from third_party.a2c_ppo_acktr.model import Policy
+from third_party.a2c_ppo_acktr.storage import RolloutStorage
 
 from gan import utils as gan_utils
 
@@ -52,6 +52,7 @@ import my_pybullet_envs
 
 import logging
 import sys
+sys.path.append("third_party")
 
 
 def main():

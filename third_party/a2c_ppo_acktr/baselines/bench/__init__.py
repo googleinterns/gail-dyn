@@ -22,5 +22,5 @@
 #
 
 # flake8: noqa F403
-from a2c_ppo_acktr.baselines.bench.benchmarks import *
-from a2c_ppo_acktr.baselines.bench.monitor import *
+from third_party.a2c_ppo_acktr.baselines.bench.benchmarks import *
+from third_party.a2c_ppo_acktr.baselines.bench.monitor import *

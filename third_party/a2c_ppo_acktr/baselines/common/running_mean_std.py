@@ -57,7 +57,7 @@ def update_mean_var_count_from_moments(mean, var, count, batch_mean, batch_var, 
 
 
 # import tensorflow as tf
-# from a2c_ppo_acktr.baselines.common.tf_util import get_session
+# from third_party.a2c_ppo_acktr.baselines.common.tf_util import get_session
 #
 # class TfRunningMeanStd(object):
 #     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
@@ -143,7 +143,7 @@ def test_runningmeanstd():
 #
 # def profile_tf_runningmeanstd():
 #     import time
-#     from a2c_ppo_acktr.baselines.common import tf_util
+#     from third_party.a2c_ppo_acktr.baselines.common import tf_util
 #
 #     tf_util.get_session( config=tf.ConfigProto(
 #         inter_op_parallelism_threads=1,

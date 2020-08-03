@@ -27,12 +27,12 @@ import numpy as np
 import torch
 from gym.spaces.box import Box
 
-from a2c_ppo_acktr.baselines import bench
-# from a2c_ppo_acktr.baselines.common.atari_wrappers import make_atari, wrap_deepmind
-from a2c_ppo_acktr.baselines.common.vec_env import VecEnvWrapper
-from a2c_ppo_acktr.baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-from a2c_ppo_acktr.baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
-from a2c_ppo_acktr.baselines.common.vec_env.vec_normalize import \
+from third_party.a2c_ppo_acktr.baselines import bench
+# from third_party.a2c_ppo_acktr.baselines.common.atari_wrappers import make_atari, wrap_deepmind
+from third_party.a2c_ppo_acktr.baselines.common.vec_env import VecEnvWrapper
+from third_party.a2c_ppo_acktr.baselines.common.vec_env.dummy_vec_env import DummyVecEnv
+from third_party.a2c_ppo_acktr.baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
+from third_party.a2c_ppo_acktr.baselines.common.vec_env.vec_normalize import \
     VecNormalize as VecNormalize_
 
 try:

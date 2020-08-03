@@ -36,6 +36,7 @@ import time
 import gym, gym.utils.seeding
 import numpy as np
 import math
+from gan import utils
 
 import os
 import inspect
@@ -46,20 +47,14 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 class LaikagoBullet:
     def __init__(self,
                  init_noise=True,
-                 obs_noise=True,
-                 act_noise=True,
                  time_step=1. / 500,
                  np_random=None,
-                 using_torque_ctrl=True  # TODO: pos control
                  ):
 
         self.init_noise = init_noise
-        self.obs_noise = obs_noise
-        self.act_noise = act_noise
 
         self._ts = time_step
         self.np_random = np_random
-        self.using_torque_ctrl = using_torque_ctrl
 
         self.base_init_pos = np.array([0, 0, .5])  # starting position
         self.base_init_euler = np.array([1.5708, 0, 1.5708])  # starting orientation
@@ -68,9 +63,11 @@ class LaikagoBullet:
 
         self.max_forces = [30.0] * 12  # joint torque limits    TODO
 
+        self.obs_scaling = ...      # TODO
+
         # self.max_forces = [30.0] * 6 + [20.0] * 6
 
-        self.init_q = [0.0, 0.0, -0.5] * 4  # TODO
+        self.init_q = [0.0, 0.0, -0.5] * 4
         self.ctrl_dofs = []
 
         self._p = None  # bullet session to connect to
@@ -105,26 +102,20 @@ class LaikagoBullet:
 
         # self.print_all_joints_info()
 
-        self.ctrl_dofs = []
         for j in range(self._p.getNumJoints(self.go_id)):
             # self._p.changeDynamics(self.go_id, j, linearDamping=0, angularDamping=0)     # TODO
             self._p.changeDynamics(self.go_id, j, jointDamping=0.5)  # TODO
-            info = self._p.getJointInfo(self.go_id, j)
-            joint_type = info[2]
-            if joint_type == self._p.JOINT_PRISMATIC or joint_type == self._p.JOINT_REVOLUTE:
-                self.ctrl_dofs.append(j)
+
+        if len(self.ctrl_dofs) == 0:
+            for j in range(self._p.getNumJoints(self.go_id)):
+                info = self._p.getJointInfo(self.go_id, j)
+                joint_type = info[2]
+                if joint_type == self._p.JOINT_PRISMATIC or joint_type == self._p.JOINT_REVOLUTE:
+                    self.ctrl_dofs.append(j)
 
         # print("ctrl dofs:", self.ctrl_dofs)
 
-        if self.init_noise:
-            init_q = self.perturb(self.init_q, 0.01)
-            init_dq = self.perturb([0.0] * len(self.ctrl_dofs), 0.1)
-        else:
-            init_q = self.init_q
-            init_dq = [0.0] * len(self.ctrl_dofs)
-
-        for pt, ind in enumerate(self.ctrl_dofs):
-            self._p.resetJointState(self.go_id, ind, init_q[pt], init_dq[pt])
+        self.reset_joints()
 
         # turn off root default control:
         # use torque control
@@ -135,10 +126,11 @@ class LaikagoBullet:
             forces=[0.0] * len(self.ctrl_dofs))
         self.torque = [0.0] * len(self.ctrl_dofs)
 
-        assert len(self.max_forces) == len(self.ctrl_dofs)
-
         self.ll = np.array([self._p.getJointInfo(self.go_id, i)[8] for i in self.ctrl_dofs])
         self.ul = np.array([self._p.getJointInfo(self.go_id, i)[9] for i in self.ctrl_dofs])
+
+        assert len(self.ctrl_dofs) == len(self.init_q)
+        assert len(self.max_forces) == len(self.ctrl_dofs)
         assert len(self.max_forces) == len(self.ll)
 
     def soft_reset(
@@ -153,19 +145,18 @@ class LaikagoBullet:
                                                 list(self._p.getQuaternionFromEuler(list(self.base_init_euler)))
                                                 )
 
+        self.reset_joints()
+
+    def reset_joints(self):
         if self.init_noise:
-            init_q = self.perturb(self.init_q, 0.01)
-            init_dq = self.perturb([0.0] * len(self.ctrl_dofs), 0.1)
+            init_q = utils.perturb(self.init_q, 0.01, self.np_random)
+            init_dq = utils.perturb([0.0] * len(self.ctrl_dofs), 0.1, self.np_random)
         else:
-            init_q = self.init_q
-            init_dq = [0.0] * len(self.ctrl_dofs)
+            init_q = utils.perturb(self.init_q, 0.0, self.np_random)
+            init_dq = utils.perturb([0.0] * len(self.ctrl_dofs), 0.0, self.np_random)
 
         for pt, ind in enumerate(self.ctrl_dofs):
             self._p.resetJointState(self.go_id, ind, init_q[pt], init_dq[pt])
-
-    def perturb(self, arr, r=0.02):
-        r = np.abs(r)
-        return np.copy(np.array(arr) + self.np_random.uniform(low=-r, high=r, size=len(arr)))
 
     def print_all_joints_info(self):
         for i in range(self._p.getNumJoints(self.go_id)):
@@ -174,13 +165,8 @@ class LaikagoBullet:
                   self._p.getJointInfo(self.go_id, i)[12])
 
     def apply_action(self, a):
-        act = np.clip(a, -1.0, 1.0)
 
-        self.torque = act * self.max_forces
-
-        # 10% white noise
-        if self.act_noise:
-            self.torque = self.perturb(self.torque, np.array(self.max_forces) / 10.0)
+        self.torque = a * self.max_forces
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.go_id,
@@ -237,9 +223,6 @@ class LaikagoBullet:
         q, dq = self.get_q_dq(self.ctrl_dofs)
         obs.extend(list(q))
         obs.extend(list(np.clip(dq / 10.0, -2, 2)))
-
-        if self.obs_noise:
-            obs = self.perturb(obs, 0.1)
 
         # print(np.array(obs))
         return list(obs)

@@ -20,6 +20,7 @@ import time
 import gym, gym.utils.seeding, gym.spaces
 import numpy as np
 import math
+from gan import utils
 
 import os
 import inspect
@@ -66,8 +67,6 @@ class LaikagoBulletEnv(gym.Env):
 
         self.np_random = None
         self.robot = LaikagoBullet(init_noise=self.init_noise,
-                                   obs_noise=self.obs_noise,
-                                   act_noise=self.act_noise,
                                    time_step=self._ts,
                                    np_random=self.np_random)
         self.seed(0)  # used once temporarily, will be overwritten outside though superclass api
@@ -76,7 +75,7 @@ class LaikagoBulletEnv(gym.Env):
 
         self.floor_id = None
 
-        self.reset_counter = 200  # do a hard reset first
+        self.reset_counter = 50  # do a hard reset first
         obs = self.reset()  # and update init obs
 
         self.action_dim = len(self.robot.ctrl_dofs)
@@ -89,7 +88,7 @@ class LaikagoBulletEnv(gym.Env):
 
     def reset(self):
 
-        if self.reset_counter < 200:
+        if self.reset_counter < 50:
             self.reset_counter += 1
             self.robot.soft_reset(self._p)
         else:
@@ -127,6 +126,10 @@ class LaikagoBulletEnv(gym.Env):
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
+
+        a = np.clip(a, -1.0, 1.0)
+        if self.act_noise:
+            a = utils.perturb(a, 0.05, self.np_random)
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -207,6 +210,9 @@ class LaikagoBulletEnv(gym.Env):
                 obs.extend([-1.0])
 
         obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
+
+        if self.obs_noise:
+            obs = utils.perturb(obs, 0.1, self.np_random)
 
         # print(obs)
         return obs

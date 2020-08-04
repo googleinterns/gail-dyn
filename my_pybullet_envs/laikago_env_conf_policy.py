@@ -193,7 +193,7 @@ class LaikagoConFEnv(gym.Env):
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
         # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
-        reward += -self.energy_weight * np.square(a).sum()
+        reward += -self.energy_weight * np.square(robo_action).sum()
         # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
@@ -215,6 +215,7 @@ class LaikagoConFEnv(gym.Env):
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
         reward += np.minimum(height - 0.3, 0.2) * 12
+        # print("height", height)
 
         # in_support = self.robot.is_root_com_in_support()
 
@@ -243,7 +244,7 @@ class LaikagoConFEnv(gym.Env):
     def apply_scale_clip_conf_from_pi(self, con_f):
 
         approx_mass = 26.0
-        max_fz = approx_mass * 9.81 * 5  # 5mg        # TODO
+        max_fz = approx_mass * 9.81 * 2  # 2mg        # TODO
 
         for foot_ind, link in enumerate(self.robot.feet):
             this_con_f = con_f[foot_ind*3: (foot_ind+1)*3]

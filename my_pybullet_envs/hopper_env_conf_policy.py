@@ -184,7 +184,7 @@ class HopperConFEnv(gym.Env):
         reward = 2.0  # alive bonus
         reward += self.get_ave_dx()
         # print("v", self.get_ave_dx())
-        reward += -0.1 * np.square(a).sum()
+        reward += -0.1 * np.square(robo_action).sum()
         # print("act norm", -0.1 * np.square(a).sum())
 
         q = np.array(obs_unnorm[2:5])

@@ -51,8 +51,9 @@ class LaikagoConFEnv(gym.Env):
                  behavior_env_name="LaikagoBulletEnv-v1",
                  dyn_dir="",
                  dyn_env_name="LaikagoConFEnv-v1",
-                 dyn_iter=None
+                 dyn_iter=None,
 
+                 cuda_env=True
                  ):
 
         self.render = render
@@ -69,6 +70,7 @@ class LaikagoConFEnv(gym.Env):
         self.q_pen_weight = q_pen_weight
 
         self.train_dyn = train_dyn
+        self.cuda_env = cuda_env
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -89,7 +91,7 @@ class LaikagoConFEnv(gym.Env):
             self.go_actor_critic, _, \
             self.recurrent_hidden_states, \
             self.masks = utils.load(
-                behavior_dir, behavior_env_name, True, None  # cpu load
+                behavior_dir, behavior_env_name, self.cuda_env, None
             )
         else:
             if dyn_iter:
@@ -100,7 +102,7 @@ class LaikagoConFEnv(gym.Env):
             self.dyn_actor_critic, _, \
             self.recurrent_hidden_states, \
             self.masks = utils.load(
-                dyn_dir, dyn_env_name, True, dyn_iter  # cpu load
+                dyn_dir, dyn_env_name, self.cuda_env, dyn_iter
             )
 
         self.reset_counter = 50  # do a hard reset first
@@ -163,12 +165,12 @@ class LaikagoConFEnv(gym.Env):
             robo_action = a
             env_pi_obs = np.concatenate((self.obs, robo_action))
 
-            env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=True)
+            env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
             with torch.no_grad():
                 _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
                     env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
                 )
-            env_action = utils.unwrap(env_action_nn, is_cuda=True)
+            env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
@@ -277,12 +279,12 @@ class LaikagoConFEnv(gym.Env):
         if self.train_dyn:
             self.behavior_obs_len = len(self.obs)
 
-            obs_nn = utils.wrap(self.obs, is_cuda=True)
+            obs_nn = utils.wrap(self.obs, is_cuda=self.cuda_env)
             with torch.no_grad():
                 _, action_nn, _, self.recurrent_hidden_states = self.go_actor_critic.act(
                     obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False  # TODO, det pi
                 )
-            action = utils.unwrap(action_nn, is_cuda=True)
+            action = utils.unwrap(action_nn, is_cuda=self.cuda_env)
 
             self.behavior_act_len = len(action)
 

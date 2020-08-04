@@ -243,6 +243,9 @@ Generator too weak?
 feedback from D too sparse?
 # both seem to point to pre-training
 
+# generator dropout?
+
+
 
 
 

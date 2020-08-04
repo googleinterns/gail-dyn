@@ -42,8 +42,9 @@ def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
         actor_critic, ob_rms = torch.load(path)
     else:
         actor_critic, ob_rms = torch.load(path, map_location="cpu")
-    recurrent_hidden_states = torch.zeros(1, actor_critic.recurrent_hidden_state_size)
-    masks = torch.zeros(1, 1)
+    d = "cuda" if is_cuda else "cpu"
+    recurrent_hidden_states = torch.zeros(1, actor_critic.recurrent_hidden_state_size, device=torch.device(d))
+    masks = torch.zeros(1, 1, device=torch.device(d))
     return (
         actor_critic,
         ob_rms,

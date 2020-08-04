@@ -249,6 +249,7 @@ while True:
             f"x: {last_dist:.2f}\t"
         )
         reward_total = 0.0
+        # env_core.reset_counter = 0
 
         if args.save_traj:
             print(np.array(cur_traj).shape)

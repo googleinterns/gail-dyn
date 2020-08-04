@@ -138,13 +138,13 @@ class LaikagoConFEnv(gym.Env):
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
             # self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-            # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=300.0)     # TODO
+            # self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=600.0)
             # # self._p.changeDynamics(self.floor_id, -1, contactStiffness=3.0)
 
             self.robot.reset(self._p)
             # # should be after reset!
             # for ind in self.robot.feet:
-            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=100.0, contactStiffness=300.0)
+            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=600.0)
             #     # self._p.changeDynamics(self.robot.go_id, ind, contactStiffness=3.0)
 
         self._p.stepSimulation()
@@ -236,7 +236,8 @@ class LaikagoConFEnv(gym.Env):
         #         break
 
         # print("------")
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
+        rpy = self._p.getEulerFromQuaternion(self.obs[9:13])
+        not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
 
         return self.obs, reward, not not_done, {}
@@ -249,11 +250,13 @@ class LaikagoConFEnv(gym.Env):
         for foot_ind, link in enumerate(self.robot.feet):
             this_con_f = con_f[foot_ind*3: (foot_ind+1)*3]
             # first dim represents fz
-            fz = np.interp(this_con_f[0], [-0.1, 5], [-5, max_fz])
+            fz = np.interp(this_con_f[0], [-0.1, 5], [0.0, max_fz])
             # second dim represents fx
-            fx = np.interp(this_con_f[1], [-5, 5], [-1.2*max_fz, 1.2*max_fz])  # mu<=1.2
+            fx = np.interp(this_con_f[1], [-2, 2], [-1.8*fz, 1.8*fz])
+            # fx = np.sign(fx) * np.maximum(np.abs(fx) - 0.6 * max_fz, 0.0)   # mu<=1.2
             # third dim represents fy
-            fy = np.interp(this_con_f[2], [-5, 5], [-1.2*max_fz, 1.2*max_fz])  # mu<=1.2
+            fy = np.interp(this_con_f[2], [-2, 2], [-1.8*fz, 1.8*fz])
+            # fy = np.sign(fy) * np.maximum(np.abs(fy) - 0.6 * max_fz, 0.0)   # mu<=1.2
 
             utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
                                                             [fx, fy, fz],

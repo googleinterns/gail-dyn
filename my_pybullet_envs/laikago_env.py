@@ -172,7 +172,7 @@ class LaikagoBulletEnv(gym.Env):
         height = root_pos[2]
         reward += np.minimum(height - 0.3, 0.2) * 12
 
-        in_support = self.robot.is_root_com_in_support()
+        # in_support = self.robot.is_root_com_in_support()
 
         # print("______")
         # print(in_support)
@@ -191,10 +191,12 @@ class LaikagoBulletEnv(gym.Env):
         #         break
 
         # print("------")
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
+        obs = self.get_extended_observation()
+        rpy = self._p.getEulerFromQuaternion(obs[9:13])
+        not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
 
-        return self.get_extended_observation(), reward, not not_done, {}
+        return obs, reward, not not_done, {}
 
     def get_dist(self):
         return self.robot.get_link_com_xyz_orn(-1)[0][0]

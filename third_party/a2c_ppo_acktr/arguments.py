@@ -204,12 +204,24 @@ def get_args():
         default=100,
         help='gail D hidden dim (default: 100)')
 
+    args, extra_dict = parse_args_with_unknown(parser)
+
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+
+    assert args.algo in ['a2c', 'ppo', 'acktr']
+    if args.recurrent_policy:
+        assert args.algo in ['a2c', 'ppo'], \
+            'Recurrent policy is not implemented for ACKTR'
+
+    return args, extra_dict
+
+
+def parse_args_with_unknown(parser):
     args, unknown = parser.parse_known_args()  # this is an 'internal' method
 
     # which returns 'parsed', the same as what parse_args() would return
     # and 'unknown', the remainder of that
     # the difference to parse_args() is that it does not exit when it finds redundant arguments
-
     def try_numerical(string):
         # convert all extra arguments to numerical type (float) if possible
         # assume always float (pass bool as 0 or 1)
@@ -228,17 +240,11 @@ def get_args():
     for arg, value in pairwise(unknown):  # note: assume always --arg value (no --arg)
         assert arg.startswith(("-", "--"))
         parser.add_argument(arg, type=try_numerical)
-
     args_w_extra = parser.parse_args()
     args_dict = vars(args)
     args_w_extra_dict = vars(args_w_extra)
+    # fix an issue: args_w_extra may have same key, diff value with args
+    # for the cases of with-hyphen argument but pass in string with underscore
+    args = args_w_extra
     extra_dict = {k: args_w_extra_dict[k] for k in set(args_w_extra_dict) - set(args_dict)}
-
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
-
-    assert args.algo in ['a2c', 'ppo', 'acktr']
-    if args.recurrent_policy:
-        assert args.algo in ['a2c', 'ppo'], \
-            'Recurrent policy is not implemented for ACKTR'
-
     return args, extra_dict

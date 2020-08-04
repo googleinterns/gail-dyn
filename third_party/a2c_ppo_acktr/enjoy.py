@@ -32,6 +32,7 @@ import torch
 
 import gym
 import my_pybullet_envs
+import random
 
 from matplotlib import pyplot as plt
 
@@ -39,6 +40,23 @@ import pickle
 
 from third_party.a2c_ppo_acktr.envs import VecPyTorch, make_vec_envs
 from third_party.a2c_ppo_acktr.utils import get_render_func, get_vec_normalize
+from third_party.a2c_ppo_acktr.arguments import parse_args_with_unknown
+from gan.utils import unwrap, load, load_gail_discriminator
+
+
+def plot_avg_dis_reward(args, avg_reward_list, dxs):
+    env_name = args.env_name
+    _, axs = plt.subplots(2, 1)
+    axs[0].plot(avg_reward_list)
+    # plt.title('Average Dis Reward, Env: {}'.format(env_name))
+    plt.xlabel('steps')
+    # plt.ylabel('average reward')
+    axs[1].plot(dxs)
+    plt.show()
+    np.save(os.path.join('./imgs', env_name + '_avg_dreward.npy'), np.array(avg_reward_list))
+    plt.savefig(os.path.join('./imgs', env_name + '_avg_dreward.png'))
+    input("press enter plt")
+
 
 sys.path.append("third_party")
 
@@ -97,7 +115,10 @@ parser.add_argument(
     help="whether to use a non-deterministic policy, 1 true 0 false",
 )
 parser.add_argument(
-    "--iter", type=int, default=-1, help="which iter pi to test"
+    "--iter",
+    type=int,
+    default=None,
+    help="which iter pi to test"
 )
 parser.add_argument(
     "--r-thres",
@@ -106,75 +127,9 @@ parser.add_argument(
     help="The threshold reward value above which it is considered a success.",
 )
 
-args, unknown = parser.parse_known_args()  # this is an 'internal' method
-# which returns 'parsed', the same as what parse_args() would return
-# and 'unknown', the remainder of that
-# the difference to parse_args() is that it does not exit when it finds redundant arguments
+args, extra_dict = parse_args_with_unknown(parser)
+
 np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
-
-
-def try_numerical(string):
-    # convert all extra arguments to numerical type (float) if possible
-    # assume always float (pass bool as 0 or 1)
-    # else, keep the argument as string type
-    try:
-        num = float(string)
-        return num
-    except ValueError:
-        return string
-
-
-def pairwise(iterable):
-    # s -> (s0, s1), (s2, s3), (s4, s5), ...
-    a = iter(iterable)
-    return zip(a, a)
-
-
-def wrap(obs: np.ndarray, is_cuda: bool) -> torch.Tensor:
-    obs = torch.Tensor([obs])
-    if is_cuda:
-        obs = obs.cuda()
-    return obs
-
-
-def unwrap(action: torch.Tensor, is_cuda: bool, clip=False) -> np.ndarray:
-    action = action.squeeze()
-    action = action.cpu() if is_cuda else action
-    if clip:
-        action = np.clip(action.numpy(), -1.0, 1.0)
-    else:
-        action = action.numpy()
-    return action
-
-
-def plot_avg_dis_reward(args, avg_reward_list, dxs):
-    env_name = args.env_name
-    _, axs = plt.subplots(2, 1)
-    axs[0].plot(avg_reward_list)
-    # plt.title('Average Dis Reward, Env: {}'.format(env_name))
-    plt.xlabel('steps')
-    # plt.ylabel('average reward')
-    axs[1].plot(dxs)
-    plt.show()
-    np.save(os.path.join('./imgs', env_name + '_avg_dreward.npy'), np.array(avg_reward_list))
-    plt.savefig(os.path.join('./imgs', env_name + '_avg_dreward.png'))
-    input("press enter plt")
-
-
-for arg, value in pairwise(
-        unknown
-):  # note: assume always --arg value (no --arg)
-    assert arg.startswith(("-", "--"))
-    parser.add_argument(
-        arg, type=try_numerical
-    )  # assume always float (pass bool as 0 or 1)
-
-args_w_extra = parser.parse_args()
-args_dict = vars(args)
-args_w_extra_dict = vars(args_w_extra)
-extra_dict = {
-    k: args_w_extra_dict[k] for k in set(args_w_extra_dict) - set(args_dict)
-}
 
 is_cuda = True
 device = "cuda" if is_cuda else "cpu"
@@ -201,30 +156,17 @@ env_core = env.venv.venv.envs[0].env.env
 # TODO: not working yet
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
+random.seed(args.seed)
 
 if args.src_env_name == "":
     env_name_transfer = args.env_name
 else:
     env_name_transfer = args.src_env_name
-if args.iter >= 0:
-    path = os.path.join(
-        args.load_dir, env_name_transfer + "_" + str(args.iter) + ".pt"
-    )
-    path_D = os.path.join(
-        args.load_dir, env_name_transfer + "_" + str(args.iter) + "_D.pt"
-    )
-else:
-    path = os.path.join(args.load_dir, env_name_transfer + ".pt")
-    path_D = os.path.join(args.load_dir, env_name_transfer + "_D.pt")
-
-if is_cuda:
-    actor_critic, ob_rms = torch.load(path)
-    if args.load_dis:
-        discri = torch.load(path_D)
-else:
-    actor_critic, ob_rms = torch.load(path, map_location="cpu")
-    if args.load_dis:
-        discri = torch.load(path_D, map_location="cpu")
+actor_critic, ob_rms, recurrent_hidden_states, masks \
+    = load(args.load_dir, env_name_transfer, is_cuda, args.iter)
+discri = None
+if args.load_dis:
+    discri = load_gail_discriminator(args.load_dir, env_name_transfer, is_cuda, args.iter)
 
 if ob_rms:
     print(ob_rms.mean)
@@ -236,11 +178,6 @@ vec_norm = get_vec_normalize(env)
 if vec_norm is not None:
     vec_norm.eval()
     vec_norm.ob_rms = ob_rms
-
-recurrent_hidden_states = torch.zeros(
-    1, actor_critic.recurrent_hidden_state_size
-)
-masks = torch.zeros(1, 1)
 
 all_trajs = {}
 cur_traj = []
@@ -257,6 +194,8 @@ list_length = 0
 dist = 0
 last_dist = 0
 
+dis_rewards = None
+dxs = None
 if args.load_dis:
     dis_rewards = []
     dxs = []
@@ -271,7 +210,7 @@ while True:
             action += (torch.rand(action.size()).to(device) - 0.5) * 0.3
 
     if args.save_traj:
-        tuple = list(unwrap(obs, is_cuda=is_cuda))
+        tuple_sas = list(unwrap(obs, is_cuda=is_cuda))
 
     if args.load_dis:
         dis_state = obs
@@ -281,11 +220,11 @@ while True:
     if args.save_traj:
         # print("action", action)
         # print("obs", obs)
-        tuple += list(unwrap(action, is_cuda=is_cuda))
-        tuple += list(unwrap(obs, is_cuda=is_cuda))
-        # print(tuple)
-        assert len(tuple) == env_core.action_dim + env_core.obs_dim * 2
-        cur_traj.append(tuple)
+        tuple_sas += list(unwrap(action, is_cuda=is_cuda))
+        tuple_sas += list(unwrap(obs, is_cuda=is_cuda))
+        # print(tuple_sas)
+        assert len(tuple_sas) == env_core.action_dim + env_core.obs_dim * 2
+        cur_traj.append(tuple_sas)
 
     if args.load_dis:
         # print("aaa")

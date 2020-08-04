@@ -33,8 +33,8 @@ def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
         recurrent_hidden_states: The recurrent hidden states of the model.
         masks: ?
     """
-    if iter_num is not None:
-        path = os.path.join(policy_dir, env_name + "_" + str(iter_num) + ".pt")
+    if iter_num is not None and iter_num >= 0:
+        path = os.path.join(policy_dir, env_name + "_" + str(int(iter_num)) + ".pt")
     else:
         path = os.path.join(policy_dir, env_name + ".pt")
     print(f"| loading policy from {path}")
@@ -50,6 +50,32 @@ def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
         recurrent_hidden_states,
         masks,
     )
+
+
+def load_gail_discriminator(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
+    """Loads parameters for a specified gail discriminator.
+
+    Args:
+        policy_dir: The directory to load the policy from.
+        env_name: The environment name of the policy.
+        is_cuda: Whether to use gpu.
+        iter_num: The iteration of the policy model to load.
+
+    Returns:
+        discri: the gail D
+        recurrent_hidden_states: The recurrent hidden states of the model.
+        masks: ?
+    """
+    if iter_num is not None and iter_num >= 0:
+        path = os.path.join(policy_dir, env_name + "_" + str(int(iter_num)) + "_D.pt")
+    else:
+        path = os.path.join(policy_dir, env_name + "_D.pt")
+    print(f"| loading gail discriminator from {path}")
+    if is_cuda:
+        discri = torch.load(path)
+    else:
+        discri = torch.load(path, map_location="cpu")
+    return discri
 
 
 def wrap(obs: np.ndarray, is_cuda: bool) -> torch.Tensor:

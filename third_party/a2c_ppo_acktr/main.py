@@ -154,6 +154,8 @@ def main():
         else:
             s_dim = 53  # TODO: hardcoded for laika for now
             a_dim = 12
+            s_dim = 11  # TODO: hardcoded for hopper for now
+            a_dim = 3
 
         if not args.gail_dyn:
             discr = gail.Discriminator(
@@ -276,7 +278,7 @@ def main():
             gail_rewards.append(torch.mean(returns).cpu().data)
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
-                                 args.gae_lambda, args.use_proper_time_limits)
+                                 args.gae_lambda, not args.no_proper_time_limits)
 
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
 

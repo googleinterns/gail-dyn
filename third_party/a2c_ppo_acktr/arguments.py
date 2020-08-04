@@ -145,10 +145,10 @@ def get_args():
         default=False,
         help='disables CUDA training')
     parser.add_argument(
-        '--use-proper-time-limits',
+        '--no-proper-time-limits',
         action='store_true',
         default=False,
-        help='compute returns taking into account time limits')
+        help='dont compute returns taking into account time limits')
     parser.add_argument(
         '--recurrent-policy',
         action='store_true',

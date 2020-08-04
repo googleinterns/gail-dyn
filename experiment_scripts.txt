@@ -675,3 +675,74 @@ python -m a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae
 
 
 # try 2mg
+--5mg -> 2mg
+--turn off early termination
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 4 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_3  --seed 50003 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 4 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./laika_12_softfloor_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft12gt_4  --seed 50004 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_12/ppo" \
+--gail-downsample-frequency 5 --behavior_env_name "LaikagoBulletEnv-v1"
+
+Looks like Gen is simply not getting info to train
+
+
+### re-run hopper & laika-motor to make sure refactor
+python -m a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1" --load-dir trained_models_laika_bullet_12/ppo --render 0 \
+--save-traj 1 --save-path "./laika_12_softfloor_n200.pkl" --enlarge-act-range 1 --non-det 1 \
+--act_noise 0 --obs_noise 0
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "HopperURDFEnv-v2" --load-dir trained_models_hopper_bullet_4/ppo \
+--render 0 --non-det 1 --correct_obs_dx 1 --act_noise 0 --obs_noise 0 --enlarge-act-range 1 \
+--save-path "./hopper_4_ave_dx_softfloor_n200_gt_2.pkl" --soft_floor_env 1 --src-env-name "HopperURDFEnv-v1" \
+--save-traj 1
+
+python -m third_party.a2c_ppo_acktr.main --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 8 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt_2.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_10  --seed 40030 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "HopperConFEnv-v1" --load-dir  trained_models_Gdyn_hopper_bullet_soft4gt_10/ppo \
+--render 1 --non-det 1 --train_dyn 1 --behavior_dir trained_models_hopper_bullet_4/ppo --enlarge-act-range 0 \
+--behavior_env_name "HopperURDFEnv-v1" --save-traj 0 --load-dis 0 --seed 1099 --iter 100 --load-dis 0
+
+python -m third_party.a2c_ppo_acktr.main --env-name "HopperConFEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 1000 --num-processes 4 --lr 1.5e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 4 \
+--num-mini-batch 16 --gamma 0.99 --gae-lambda 0.95 \
+  --num-env-steps 1000000 --use-linear-lr-decay --use-proper-time-limits --clip-param 0.1 \
+  --save-dir trained_models_hopper_bullet_4_soft_GailDyn_gt10 --seed 41100 \
+  --train_dyn 0  --dyn_dir trained_models_Gdyn_hopper_bullet_soft4gt_10/ppo \
+  --dyn_env_name "HopperConFEnv-v1" --dyn-iter 400 \
+  --warm-start "./trained_models_hopper_bullet_4/ppo/HopperURDFEnv-v1.pt" \
+  --correct_obs_dx 1 --act_noise 0 --obs_noise 0
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "HopperURDFEnv-v2" \
+--load-dir trained_models_hopper_bullet_4_soft_GailDyn_gt10/ppo --render 1 --correct_obs_dx 1 \
+--use_gen_dyn 0 --act_noise 0 --obs_noise 0 --iter 20 --seed 1099 --soft_floor_env 1 \
+--src-env-name "HopperConFEnv-v1" --non-det 0 --enlarge-act-range 0
+
+
+python -m third_party.a2c_ppo_acktr.main --env-name "HopperConFEnv-v1"
+--num-steps 1000 --num-processes 2 --lr 3e-4 --entropy-coef 0.01
+--num-mini-batch 8 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./hopper_4_ave_dx_softfloor_n200_gt_2.pkl" \
+--save-dir trained_models_Gdyn_hopper_bullet_soft4gt_11  --seed 40030 --gail-traj-num 100 --train_dyn 1 \
+--gail-epoch 20 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_hopper_bullet_4/ppo"
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 \
+--num-steps 2000 --num-processes 5 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 \
+--num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay \
+--use-proper-time-limits --gail --gail-traj-path "./laika_15_normalfloor_n200.pkl" \
+--save-dir trained_models_laika_bullet_15_gail_tmp --seed 30000 --gail-traj-num 100 --gail-batch-size 512
+###
+

@@ -43,8 +43,9 @@ class LaikagoBulletEnv(gym.Env):
                  energy_weight=0.05,
                  jl_weight=0.5,
                  ab=0,
-                 q_pen_weight=0.3
+                 q_pen_weight=0.3,
 
+                 soft_floor_env=False,
                  ):
 
         self.render = render
@@ -59,6 +60,8 @@ class LaikagoBulletEnv(gym.Env):
         self.jl_weight = jl_weight
         self.ab = ab
         self.q_pen_weight = q_pen_weight
+
+        self.soft_floor_env = soft_floor_env
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -101,14 +104,15 @@ class LaikagoBulletEnv(gym.Env):
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
             self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-            # self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=300.0)     # TODO
-            # # self._p.changeDynamics(self.floor_id, -1, contactStiffness=3.0)
 
             self.robot.reset(self._p)
-            # # should be after reset!
-            # for ind in self.robot.feet:
-            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=100.0, contactStiffness=300.0)
-            #     # self._p.changeDynamics(self.robot.go_id, ind, contactStiffness=3.0)
+
+            # should be after reset!
+            if self.soft_floor_env:
+                # TODO: for pi12
+                self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
+                for ind in self.robot.feet:
+                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=400.0)
 
         self._p.stepSimulation()
 

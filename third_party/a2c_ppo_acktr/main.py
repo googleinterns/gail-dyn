@@ -89,6 +89,8 @@ def main():
             actor_critic, _ = torch.load(args.warm_start)
         else:
             actor_critic, _ = torch.load(args.warm_start, map_location='cpu')
+        # actor_critic.reset_variance(envs.action_space)
+        # actor_critic.to(device)
 
     dummy = gym.make(args.env_name, render=False, **extra_dict)
     save_path = os.path.join(args.save_dir, args.algo)
@@ -154,8 +156,8 @@ def main():
         else:
             s_dim = 53  # TODO: hardcoded for laika for now
             a_dim = 12
-            s_dim = 11  # TODO: hardcoded for hopper for now
-            a_dim = 3
+            # s_dim = 11  # TODO: hardcoded for hopper for now
+            # a_dim = 3
 
         if not args.gail_dyn:
             discr = gail.Discriminator(
@@ -252,8 +254,8 @@ def main():
             #     envs.venv.eval()
 
             gail_epoch = args.gail_epoch
-            if j < 10:
-                gail_epoch = 100  # Warm up
+            # if j < 10:
+            #     gail_epoch = 100  # TODO: Warm up
 
             for _ in range(gail_epoch):
                 gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,

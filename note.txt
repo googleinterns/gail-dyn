@@ -231,3 +231,19 @@ TODO: put reward calc in if, accelerate later on
 # turn off alive pen for now.
 
 
+List of attempts:
+1. --5mg -> 2mg
+2. --turn off early termination (still blows everywhere)
+3. more forgiving early termination
+4. turn off D warm-start
+5. reshape lateral action space
+6. larger G & D
+
+Generator too weak?
+feedback from D too sparse?
+# both seem to point to pre-training
+
+
+
+
+

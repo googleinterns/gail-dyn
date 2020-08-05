@@ -53,7 +53,9 @@ class LaikagoConFEnv(gym.Env):
                  dyn_env_name="LaikagoConFEnv-v1",
                  dyn_iter=None,
 
-                 cuda_env=True
+                 cuda_env=True,
+
+                 soft_floor_env=False,      # for collecting data
                  ):
 
         self.render = render
@@ -71,6 +73,7 @@ class LaikagoConFEnv(gym.Env):
 
         self.train_dyn = train_dyn
         self.cuda_env = cuda_env
+        self.soft_floor_env = soft_floor_env
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -139,15 +142,17 @@ class LaikagoConFEnv(gym.Env):
             self._p.setPhysicsEngineParameter(numSolverIterations=100)
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
-            # self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
-            # self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=600.0)
-            # # self._p.changeDynamics(self.floor_id, -1, contactStiffness=3.0)
+            if self.soft_floor_env:
+                self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
 
             self.robot.reset(self._p)
-            # # should be after reset!
-            # for ind in self.robot.feet:
-            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=600.0)
-            #     # self._p.changeDynamics(self.robot.go_id, ind, contactStiffness=3.0)
+
+            # should be after reset!
+            if self.soft_floor_env:
+                # TODO: for pi12
+                self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=600.0)
+                for ind in self.robot.feet:
+                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=600.0)
 
         self._p.stepSimulation()
         self.timer = 0
@@ -181,7 +186,8 @@ class LaikagoConFEnv(gym.Env):
 
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)
-            self.apply_scale_clip_conf_from_pi(env_action)
+            if not self.soft_floor_env:
+                self.apply_scale_clip_conf_from_pi(env_action)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)

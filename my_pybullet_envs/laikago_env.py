@@ -42,8 +42,9 @@ class LaikagoBulletEnv(gym.Env):
                  max_tar_vel=2.5,
                  energy_weight=0.05,
                  jl_weight=0.5,
-                 ab=0,
-                 q_pen_weight=0.3,
+                 ab=3.0,
+                 q_pen_weight=0.25,
+                 vel_r_weight=4.0,
 
                  soft_floor_env=False,
                  ):
@@ -60,6 +61,7 @@ class LaikagoBulletEnv(gym.Env):
         self.jl_weight = jl_weight
         self.ab = ab
         self.q_pen_weight = q_pen_weight
+        self.vel_r_weight = vel_r_weight
 
         self.soft_floor_env = soft_floor_env
 
@@ -147,14 +149,12 @@ class LaikagoBulletEnv(gym.Env):
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_1 = root_pos[0]
+        self.velx = (x_1 - x_0) / (self.control_skip * self._ts)
 
-        not_done = True
         reward = self.ab  # alive bonus
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
-        reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
+        reward += np.minimum(self.velx, tar) * self.vel_r_weight
         # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
-        reward += -self.energy_weight * np.square(a).sum()
-        # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
         pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
@@ -163,20 +163,23 @@ class LaikagoBulletEnv(gym.Env):
         reward += -self.jl_weight * joints_at_limit
         # print("jl", -self.jl_weight * joints_at_limit)
 
-        reward += -np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
-        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)  # almost like /23
+        reward += -np.minimum(self.energy_weight * np.abs(a * dq).sum(), 10.0)
+        # print("act norm", -np.minimum(self.energy_weight * np.abs(a * dq).sum(), 10.0))
+
+        q_pen_weights = np.array([2.0, 1, 1] * 4) * self.q_pen_weight       # do not abduct
+        reward += -np.minimum(np.sum(np.abs(q - self.robot.init_q) * q_pen_weights), 5.0)
         # print(np.abs(dq))
         # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
-        # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+        # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q) * q_pen_weights), 5.0))
         # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
 
         y_1 = root_pos[1]
         reward += -y_1 * 0.5
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
-        reward += np.minimum(height - 0.3, 0.2) * 12
+        reward += np.minimum(height - 0.3, 0.0) * 18
 
-        # in_support = self.robot.is_root_com_in_support()
+        in_support = self.robot.is_root_com_in_support()
 
         # print("______")
         # print(in_support)
@@ -197,13 +200,16 @@ class LaikagoBulletEnv(gym.Env):
         # print("------")
         obs = self.get_extended_observation()
         rpy = self._p.getEulerFromQuaternion(obs[9:13])
-        not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
         return obs, reward, not not_done, {}
 
     def get_dist(self):
         return self.robot.get_link_com_xyz_orn(-1)[0][0]
+
+    def get_ave_dx(self):
+        return self.velx
 
     def get_extended_observation(self):
         obs = self.robot.get_robot_observation()
@@ -215,7 +221,7 @@ class LaikagoBulletEnv(gym.Env):
         #     else:
         #         obs.extend([-1.0])
 
-        obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
+        # obs.extend([np.minimum(self.timer / 500, self.max_tar_vel)])  # TODO
 
         if self.obs_noise:
             obs = utils.perturb(obs, 0.1, self.np_random)

@@ -190,15 +190,15 @@ done = False
 
 reward_total = 0
 
-list_length = 0
+list_rewards = []
+list_r_per_step = []
 dist = 0
 last_dist = 0
 
 dis_rewards = None
-dxs = None
+dxs = []
 if args.load_dis:
     dis_rewards = []
-    dxs = []
 
 while True:
     with torch.no_grad():
@@ -216,6 +216,7 @@ while True:
         dis_state = obs
     # Obser reward and next obs
     obs, reward, done, _ = env.step(action)
+    list_r_per_step.append(reward)
 
     if args.save_traj:
         # print("action", action)
@@ -231,7 +232,8 @@ while True:
         dis_action = obs[:, :env_core.behavior_obs_len]
         dis_r = discri.predict_prob_single_step(dis_state, dis_action)
         dis_rewards.append(unwrap(dis_r, is_cuda=is_cuda))
-        dxs.append(env_core.get_ave_dx())
+
+    dxs.append(env_core.get_ave_dx())
 
     try:
         env_core.cam_track_torso_link()
@@ -248,24 +250,33 @@ while True:
             f"tr: {reward_total:.1f}\t"
             f"x: {last_dist:.2f}\t"
         )
+        list_rewards.append(reward_total)
         reward_total = 0.0
         # env_core.reset_counter = 0
+
+        cur_traj_idx += 1
+        if cur_traj_idx >= args.num_trajs:
+            break
 
         if args.save_traj:
             print(np.array(cur_traj).shape)
             all_trajs[cur_traj_idx] = cur_traj
-            cur_traj_idx += 1
             cur_traj = []
-            if cur_traj_idx >= args.num_trajs:
-                break
 
         if args.load_dis:
             plot_avg_dis_reward(args, dis_rewards, dxs)
             dis_rewards = []
-            dxs = []
+        else:
+            # plot_avg_dis_reward(args, list_r_per_step, dxs)
+            list_r_per_step = []
+        dxs = []
 
     masks.fill_(0.0 if done else 1.0)
 
 with open(args.save_path, "wb") as handle:
     # print(all_trajs)
     pickle.dump(all_trajs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# with open("old_hopper_r", "wb") as handle:
+#     print(list_rewards)
+#     pickle.dump(list_rewards, handle, protocol=pickle.HIGHEST_PROTOCOL)

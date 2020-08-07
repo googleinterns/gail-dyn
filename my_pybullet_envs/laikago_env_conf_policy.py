@@ -47,6 +47,8 @@ class LaikagoConFEnv(gym.Env):
                  q_pen_weight=0.3,
 
                  train_dyn=True,  # if false, fix dyn and train motor policy
+                 pretrain_dyn=False,        # pre-train with deviation to sim
+                 enlarge_act_range=True,    # make behavior pi more diverse to match collection
                  behavior_dir="trained_models_laika_bullet_12/ppo",
                  behavior_env_name="LaikagoBulletEnv-v1",
                  dyn_dir="",
@@ -72,6 +74,8 @@ class LaikagoConFEnv(gym.Env):
         self.q_pen_weight = q_pen_weight
 
         self.train_dyn = train_dyn
+        self.enlarge_act_range = enlarge_act_range
+        self.pretrain_dyn = pretrain_dyn
         self.cuda_env = cuda_env
         self.soft_floor_env = soft_floor_env
 
@@ -113,6 +117,9 @@ class LaikagoConFEnv(gym.Env):
         self.behavior_obs_len = None
         self.behavior_act_len = None
         self.reset()  # and update init obs
+
+        # set up imaginary session for pre-train
+        self.set_up_imaginary_session()
 
         if self.train_dyn:
             assert self.behavior_act_len == len(self.robot.ctrl_dofs)
@@ -160,6 +167,48 @@ class LaikagoConFEnv(gym.Env):
 
         return self.obs
 
+    def set_up_imaginary_session(self):
+        # create another bullet session to run reset & rollout
+        self._imaginary_p = bullet_client.BulletClient()
+        self._imaginary_robot = LaikagoBullet(init_noise=self.init_noise,
+                                              time_step=self._ts,
+                                              np_random=self.np_random)
+
+        self._imaginary_p.resetSimulation()
+        self._imaginary_p.setTimeStep(self._ts)
+        self._imaginary_p.setGravity(0, 0, -10)
+        self._imaginary_p.setPhysicsEngineParameter(numSolverIterations=100)
+        # there is a floor in this session
+        self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+        self._imaginary_robot.reset(self._imaginary_p)
+        self._imaginary_p.stepSimulation()
+
+    def rollout_one_step_imaginary(self):
+        # and get the obs vector [no tar vel] in sim
+        assert self.train_dyn
+        assert self.pretrain_dyn
+
+        robo_obs = self.obs[:self.behavior_obs_len]
+        robo_action = self.obs[self.behavior_obs_len:]
+        # print(robo_obs, "in img obs")
+        # print(robo_action, "in img act")
+        robo_state_vec = self._imaginary_robot.transform_obs_to_state(robo_obs)
+        self._imaginary_robot.soft_reset_to_state(self._imaginary_p, robo_state_vec)
+
+        for _ in range(self.control_skip):
+            self._imaginary_robot.apply_action(robo_action)
+            self._imaginary_p.stepSimulation()
+            # if self.render:
+            #     time.sleep(self._ts * 0.5)
+
+        return self._imaginary_robot.get_robot_observation()
+
+    def calc_obs_dist_pretrain(self, obs1, obs2):
+        # TODO quat dist
+        # print(np.linalg.norm(np.array(obs1) - np.array(obs2)))
+        # print(1.5-np.linalg.norm(np.array(obs1[36:]) - np.array(obs2[36:])))
+        return 1.5-np.linalg.norm(np.array(obs1) - np.array(obs2))
+
     def step(self, a):
 
         if self.train_dyn:
@@ -168,21 +217,26 @@ class LaikagoConFEnv(gym.Env):
             robo_action = self.obs[self.behavior_obs_len:]
         else:
             robo_action = a
-            env_pi_obs = np.concatenate((self.obs, robo_action))
-
-            env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
-            with torch.no_grad():
-                _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
-                    env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
-                )
-            env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
+            if not self.soft_floor_env:
+                env_pi_obs = np.concatenate((self.obs, robo_action))
+                env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
+                with torch.no_grad():
+                    _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
+                        env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
+                    )
+                env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
 
+        # this is post noise (unseen), different from seen diversify of self.enlarge_act_scale
         robo_action = np.clip(robo_action, -1.0, 1.0)
         if self.act_noise:
             robo_action = utils.perturb(robo_action, 0.05, self.np_random)
+
+        if self.pretrain_dyn:
+            img_obs = self.rollout_one_step_imaginary()     # takes the old self.obs
+            # print(np.array(img_obs), "out img obs")
 
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)
@@ -194,38 +248,44 @@ class LaikagoConFEnv(gym.Env):
             self.timer += 1
         self.update_extended_observation()
 
+        # print(self.obs[:self.behavior_obs_len - 5], "out real")
+
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_1 = root_pos[0]
-
-        reward = self.ab  # alive bonus
-        tar = np.minimum(self.timer / 500, self.max_tar_vel)
-        reward += np.minimum((x_1 - x_0) / (self.control_skip * self._ts), tar) * 4.0
-        # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
-        reward += -self.energy_weight * np.square(robo_action).sum()
-        # print("act norm", -self.energy_weight * np.square(a).sum())
-
-        q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
-        q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
-        joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
-        reward += -self.jl_weight * joints_at_limit
-        # print("jl", -self.jl_weight * joints_at_limit)
-
-        reward += -np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
-        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)  # almost like /23
-        # print(np.abs(dq))
-        # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
-        # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
-        # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+        self.velx = (x_1 - x_0) / (self.control_skip * self._ts)
 
         y_1 = root_pos[1]
-        reward += -y_1 * 0.5
-        # print("dev pen", -y_1*0.5)
         height = root_pos[2]
-        reward += np.minimum(height - 0.3, 0.2) * 12
-        # print("height", height)
 
-        # in_support = self.robot.is_root_com_in_support()
+        if not self.pretrain_dyn:
+            reward = self.ab  # alive bonus
+            tar = np.minimum(self.timer / 500, self.max_tar_vel)
+            reward += np.minimum(self.velx, tar) * 4.0
+            # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
+            reward += -self.energy_weight * np.square(robo_action).sum()
+            # print("act norm", -self.energy_weight * np.square(a).sum())
+
+            q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+            pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
+            q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
+            joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
+            reward += -self.jl_weight * joints_at_limit
+            # print("jl", -self.jl_weight * joints_at_limit)
+
+            reward += -np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
+            reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)  # almost like /23
+            # print(np.abs(dq))
+            # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
+            # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+            # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+            reward += -y_1 * 0.5
+            # print("dev pen", -y_1*0.5)
+            reward += np.minimum(height - 0.3, 0.2) * 12
+            # print("height", height)
+            # in_support = self.robot.is_root_com_in_support()
+
+        else:
+            reward = self.calc_obs_dist_pretrain(img_obs[:-4], self.obs[:len(img_obs[:-4])])
 
         # print("______")
         # print(in_support)
@@ -271,13 +331,16 @@ class LaikagoConFEnv(gym.Env):
                                                             [0, 0, 0],
                                                             self._p)
 
+    def get_ave_dx(self):
+        return self.velx
+
     def get_dist(self):
         return self.robot.get_link_com_xyz_orn(-1)[0][0]
 
     def update_extended_observation(self):
         self.obs = self.robot.get_robot_observation()
 
-        self.obs = np.concatenate((self.obs, [np.minimum(self.timer / 500, self.max_tar_vel)]))  # TODO
+        # self.obs = np.concatenate((self.obs, [np.minimum(self.timer / 500, self.max_tar_vel)]))  # TODO
 
         if self.obs_noise:
             self.obs = utils.perturb(self.obs, 0.1, self.np_random)
@@ -291,6 +354,10 @@ class LaikagoConFEnv(gym.Env):
                     obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False  # TODO, det pi
                 )
             action = utils.unwrap(action_nn, is_cuda=self.cuda_env)
+
+            if self.enlarge_act_range:
+                # 15% noise if a clipped to -1, 1
+                action = utils.perturb(action, 0.15, self.np_random)
 
             self.behavior_act_len = len(action)
 
@@ -307,7 +374,7 @@ class LaikagoConFEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 5
+        distance = 4
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

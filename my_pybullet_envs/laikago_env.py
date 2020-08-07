@@ -19,12 +19,10 @@ import pybullet
 import time
 import gym, gym.utils.seeding, gym.spaces
 import numpy as np
-import math
 from gan import utils
 
 import os
 import inspect
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
@@ -40,10 +38,11 @@ class LaikagoBulletEnv(gym.Env):
                  using_torque_ctrl=True,
 
                  max_tar_vel=2.5,
-                 energy_weight=0.05,
+                 energy_weight=0.1,
                  jl_weight=0.5,
-                 ab=3.0,
-                 q_pen_weight=0.25,
+                 ab=4.5,
+                 q_pen_weight=0.5,
+                 dq_pen_weight=0.01,
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
@@ -61,6 +60,7 @@ class LaikagoBulletEnv(gym.Env):
         self.jl_weight = jl_weight
         self.ab = ab
         self.q_pen_weight = q_pen_weight
+        self.dq_pen_weight = dq_pen_weight
         self.vel_r_weight = vel_r_weight
 
         self.soft_floor_env = soft_floor_env
@@ -109,19 +109,14 @@ class LaikagoBulletEnv(gym.Env):
 
             self.robot.reset(self._p)
 
-            # should be after reset!
-            if self.soft_floor_env:
-                # TODO: for pi12
-                self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
-                for ind in self.robot.feet:
-                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=400.0)
+        # should be after reset!
+        if self.soft_floor_env:
+            # TODO: for pi12
+            self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=400.0)
+            for ind in self.robot.feet:
+                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=100.0, contactStiffness=400.0)
 
         self._p.stepSimulation()
-
-        # # self.robot.soft_reset(self._p)
-        # q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        # print("dq after reset", dq)
-        # input("press enter")
 
         self.timer = 0
         obs = self.get_extended_observation()
@@ -154,30 +149,27 @@ class LaikagoBulletEnv(gym.Env):
         reward = self.ab  # alive bonus
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum(self.velx, tar) * self.vel_r_weight
-        # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
+        # print("v", self.velx, "tar", tar)
+        reward += -self.energy_weight * np.square(a).sum()
+        # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        # print(np.max(np.abs(dq)))
         pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
         q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
         joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
         reward += -self.jl_weight * joints_at_limit
         # print("jl", -self.jl_weight * joints_at_limit)
 
-        reward += -np.minimum(self.energy_weight * np.abs(a * dq).sum(), 10.0)
-        # print("act norm", -np.minimum(self.energy_weight * np.abs(a * dq).sum(), 10.0))
-
-        q_pen_weights = np.array([2.0, 1, 1] * 4) * self.q_pen_weight       # do not abduct
-        reward += -np.minimum(np.sum(np.abs(q - self.robot.init_q) * q_pen_weights), 5.0)
-        # print(np.abs(dq))
-        # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
-        # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q) * q_pen_weights), 5.0))
+        reward += -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0)
+        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)
+        # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0))
         # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
 
         y_1 = root_pos[1]
         reward += -y_1 * 0.5
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
-        reward += np.minimum(height - 0.3, 0.0) * 18
 
         in_support = self.robot.is_root_com_in_support()
 
@@ -240,7 +232,7 @@ class LaikagoBulletEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 3
+        distance = 4
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

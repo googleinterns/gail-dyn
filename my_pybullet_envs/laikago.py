@@ -115,7 +115,7 @@ class LaikagoBullet:
 
         # print("ctrl dofs:", self.ctrl_dofs)
 
-        self.reset_joints()
+        self.reset_joints(self.init_q, np.array([0.0] * len(self.ctrl_dofs)))
 
         # turn off root default control:
         # use torque control
@@ -145,15 +145,33 @@ class LaikagoBullet:
                                                 list(self._p.getQuaternionFromEuler(list(self.base_init_euler)))
                                                 )
 
-        self.reset_joints()
+        self.reset_joints(self.init_q, np.array([0.0] * len(self.ctrl_dofs)))
 
-    def reset_joints(self):
+    def soft_reset_to_state(self, bullet_client, state_vec):
+        # state vec following this order:
+        # root dq [6]
+        # root q [3+4(quat)]
+        # all q/dq
+        # note: no contact bits
+        self._p = bullet_client
+        self._p.resetBaseVelocity(self.go_id, state_vec[:3], state_vec[3:6])
+        self._p.resetBasePositionAndOrientation(self.go_id,
+                                                state_vec[6:9],
+                                                state_vec[9:13])
+        qdq = state_vec[13:]
+        assert len(qdq) == len(self.ctrl_dofs) * 2
+        init_noise_old = self.init_noise
+        self.init_noise = False
+        self.reset_joints(qdq[:len(self.ctrl_dofs)], qdq[len(self.ctrl_dofs):])
+        self.init_noise = init_noise_old
+
+    def reset_joints(self, q, dq):
         if self.init_noise:
-            init_q = utils.perturb(self.init_q, 0.01, self.np_random)
-            init_dq = utils.perturb([0.0] * len(self.ctrl_dofs), 0.1, self.np_random)
+            init_q = utils.perturb(q, 0.01, self.np_random)
+            init_dq = utils.perturb(dq, 0.1, self.np_random)
         else:
-            init_q = utils.perturb(self.init_q, 0.0, self.np_random)
-            init_dq = utils.perturb([0.0] * len(self.ctrl_dofs), 0.0, self.np_random)
+            init_q = utils.perturb(q, 0.0, self.np_random)
+            init_dq = utils.perturb(dq, 0.0, self.np_random)
 
         for pt, ind in enumerate(self.ctrl_dofs):
             self._p.resetJointState(self.go_id, ind, init_q[pt], init_dq[pt])
@@ -230,6 +248,19 @@ class LaikagoBullet:
 
         obs = np.array(obs) * self.obs_scaling
         return list(obs)
+
+    def transform_obs_to_state(self, obs):
+        # TODO: instead of using this, maybe directly sync states between 2 sims
+        # assume obs fully observable here
+        # root dq [6]
+        # root q [3+4(quat)]
+        # all q/dq
+        obs = np.array(obs) / self.obs_scaling
+        state_vec = list(obs[:6])
+        state_vec += [0.0]  # root x does not matter
+        state_vec += list(obs[6:12])    # root y,z, quat
+        state_vec += list(obs[24:-4])   # (skip 4 feet xyz) q, dq
+        return state_vec
 
     def is_root_com_in_support(self):
         root_com, _ = self._p.getBasePositionAndOrientation(self.go_id)

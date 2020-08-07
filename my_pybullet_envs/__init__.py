@@ -17,6 +17,7 @@ from gym.envs.registration import registry, make, spec
 from .hopper_env import HopperURDFEnv
 from .hopper_env_MB import HopperURDFEnvMB
 from .laikago_env import LaikagoBulletEnv
+from .laikago_env_ori import LaikagoBulletEnvOri
 from .hopper_env_conf_policy import HopperConFEnv
 from .laikago_env_conf_policy import LaikagoConFEnv
 
@@ -53,6 +54,12 @@ register(
     entry_point="my_pybullet_envs:LaikagoBulletEnv",
     max_episode_steps=500,
 )
+
+# register(
+#     id="LaikagoBulletEnv-v2",
+#     entry_point="my_pybullet_envs:LaikagoBulletEnvOri",
+#     max_episode_steps=500,
+# )
 
 register(
     id="LaikagoConFEnv-v1",

@@ -113,6 +113,22 @@ class DiagGaussian(nn.Module):
         return FixedNormal(action_mean, action_logstd.exp())
 
 
+class DiagGaussianNew(nn.Module):
+    def __init__(self, num_inputs, num_outputs):
+        super(DiagGaussianNew, self).__init__()
+
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0))
+
+        self.fc_mean = init_(nn.Linear(num_inputs, num_outputs))
+        self.logstd = init_(nn.Linear(num_inputs, num_outputs))
+
+    def forward(self, x):
+        action_mean = self.fc_mean(x)
+        action_logstd = self.logstd(x)
+        return FixedNormal(action_mean, action_logstd.exp())
+
+
 class Bernoulli(nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(Bernoulli, self).__init__()

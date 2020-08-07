@@ -41,10 +41,12 @@ class LaikagoConFEnv(gym.Env):
                  using_torque_ctrl=True,
 
                  max_tar_vel=2.5,
-                 energy_weight=0.05,
+                 energy_weight=0.1,
                  jl_weight=0.5,
-                 ab=0,
-                 q_pen_weight=0.3,
+                 ab=5.0,
+                 q_pen_weight=0.5,
+                 dq_pen_weight=0.02,
+                 vel_r_weight=4.0,
 
                  train_dyn=True,  # if false, fix dyn and train motor policy
                  pretrain_dyn=False,        # pre-train with deviation to sim
@@ -72,6 +74,8 @@ class LaikagoConFEnv(gym.Env):
         self.jl_weight = jl_weight
         self.ab = ab
         self.q_pen_weight = q_pen_weight
+        self.dq_pen_weight = dq_pen_weight
+        self.vel_r_weight = vel_r_weight
 
         self.train_dyn = train_dyn
         self.enlarge_act_range = enlarge_act_range
@@ -256,34 +260,33 @@ class LaikagoConFEnv(gym.Env):
 
         y_1 = root_pos[1]
         height = root_pos[2]
+        q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        # print(np.max(np.abs(dq)))
+        in_support = self.robot.is_root_com_in_support()
+        rpy = self._p.getEulerFromQuaternion(self.obs[9:13])
 
         if not self.pretrain_dyn:
             reward = self.ab  # alive bonus
             tar = np.minimum(self.timer / 500, self.max_tar_vel)
-            reward += np.minimum(self.velx, tar) * 4.0
-            # print("v", (x_1 - x_0) / (self.control_skip * self._ts), "tar", tar)
+            reward += np.minimum(self.velx, tar) * self.vel_r_weight
+            # print("v", self.velx, "tar", tar)
             reward += -self.energy_weight * np.square(robo_action).sum()
             # print("act norm", -self.energy_weight * np.square(a).sum())
 
-            q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
             pos_mid = 0.5 * (self.robot.ll + self.robot.ul)
             q_scaled = 2 * (q - pos_mid) / (self.robot.ul - self.robot.ll)
             joints_at_limit = np.count_nonzero(np.abs(q_scaled) > 0.97)
             reward += -self.jl_weight * joints_at_limit
             # print("jl", -self.jl_weight * joints_at_limit)
 
-            reward += -np.minimum(np.sum(np.abs(dq)) * 0.02, 5.0)  # almost like /23
-            reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)  # almost like /23
-            # print(np.abs(dq))
-            # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * 0.03, 5.0))
-            # print("pos pen", -np.minimum(np.sum(np.abs(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+            reward += -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0)
+            reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)
+            # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0))
             # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
+
+            y_1 = root_pos[1]
             reward += -y_1 * 0.5
             # print("dev pen", -y_1*0.5)
-            reward += np.minimum(height - 0.3, 0.2) * 12
-            # print("height", height)
-            # in_support = self.robot.is_root_com_in_support()
-
         else:
             reward = self.calc_obs_dist_pretrain(img_obs[:-4], self.obs[:len(img_obs[:-4])])
 
@@ -304,8 +307,7 @@ class LaikagoConFEnv(gym.Env):
         #         break
 
         # print("------")
-        rpy = self._p.getEulerFromQuaternion(self.obs[9:13])
-        not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
         return self.obs, reward, not not_done, {}

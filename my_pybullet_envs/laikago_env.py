@@ -40,9 +40,9 @@ class LaikagoBulletEnv(gym.Env):
                  max_tar_vel=2.5,
                  energy_weight=0.1,
                  jl_weight=0.5,
-                 ab=4.5,
+                 ab=5.0,
                  q_pen_weight=0.5,
-                 dq_pen_weight=0.01,
+                 dq_pen_weight=0.02,
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
@@ -139,7 +139,7 @@ class LaikagoBulletEnv(gym.Env):
                 self.robot.apply_action(a)
             self._p.stepSimulation()
             if self.render:
-                time.sleep(self._ts * 1.5)
+                time.sleep(self._ts * 0.5)
             self.timer += 1
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)

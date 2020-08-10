@@ -201,6 +201,11 @@ if args.load_dis:
     dis_rewards = []
 
 while True:
+    try:
+        env_core.reset_counter = 5000
+    except:
+        pass
+
     with torch.no_grad():
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det

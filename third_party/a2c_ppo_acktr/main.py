@@ -154,7 +154,7 @@ def main():
             s_dim = envs.observation_space.shape[0]
             a_dim = envs.action_space.shape[0]
         else:
-            s_dim = 53  # TODO: hardcoded for laika for now
+            s_dim = 52  # TODO: hardcoded for laika for now
             a_dim = 12
             # s_dim = 11  # TODO: hardcoded for hopper for now
             # a_dim = 3
@@ -171,7 +171,7 @@ def main():
 
         expert_tuples = gan_utils.load_combined_sas_from_pickle(
             args.gail_traj_path,
-            downsample_freq=args.gail_downsample_frequency,
+            downsample_freq=int(args.gail_downsample_frequency),
             load_num_trajs=args.gail_traj_num
         )
 

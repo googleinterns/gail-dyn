@@ -308,6 +308,7 @@ class LaikagoConFEnv(gym.Env):
 
         # print("------")
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
 
         return self.obs, reward, not not_done, {}

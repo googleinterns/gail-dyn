@@ -46,6 +46,7 @@ class LaikagoBulletEnv(gym.Env):
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
+                 randomization_train=False
                  ):
 
         self.render = render
@@ -64,6 +65,7 @@ class LaikagoBulletEnv(gym.Env):
         self.vel_r_weight = vel_r_weight
 
         self.soft_floor_env = soft_floor_env
+        self.randomization_train = randomization_train
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -109,12 +111,32 @@ class LaikagoBulletEnv(gym.Env):
 
             self.robot.reset(self._p)
 
+            # self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
+            # for ind in self.robot.feet:
+            #     self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=400.0)
+
         # should be after reset!
         if self.soft_floor_env:
-            # TODO: for pi12
-            self._p.changeDynamics(self.floor_id, -1, contactDamping=100.0, contactStiffness=400.0)
+            # TODO: for pi23
+            damp = np.random.uniform(50.0, 75.0)
+            stiff = np.random.uniform(75.0, 150.0)
+            # # TODO: for pi12
+            # damp = 150.0
+            # stiff = 400.0
+            self._p.changeDynamics(self.floor_id, -1, contactDamping=damp, contactStiffness=stiff)
+            # for ind in range(16):
             for ind in self.robot.feet:
-                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=100.0, contactStiffness=400.0)
+                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
+
+        if self.randomization_train:
+            damp = np.random.uniform(150.0, 1000.0)
+            stiff = np.random.uniform(300.0, 3000.0)
+            # damp = np.random.uniform(75.0, 150.0)
+            # stiff = np.random.uniform(150.0, 300.0)
+            self._p.changeDynamics(self.floor_id, -1, contactDamping=damp, contactStiffness=stiff)
+            # for ind in range(16):
+            for ind in self.robot.feet:
+                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
         self._p.stepSimulation()
 

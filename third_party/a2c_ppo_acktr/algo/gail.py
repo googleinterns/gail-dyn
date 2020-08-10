@@ -133,7 +133,7 @@ class Discriminator(nn.Module):
             self.eval()
             d = self.trunk(torch.cat([state, action], dim=1))
             s = torch.sigmoid(d)
-            reward = -(1 - s + 1e-7).log() - 0.2  # avoid exploding, should not matter TODO-0.65
+            reward = -(1 - s + 1e-7).log()  # avoid exploding, should not matter TODO-0.65
             if self.returns is None:
                 self.returns = reward.clone()
             else:

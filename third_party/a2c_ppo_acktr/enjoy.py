@@ -201,10 +201,10 @@ if args.load_dis:
     dis_rewards = []
 
 while True:
-    try:
-        env_core.reset_counter = 5000
-    except:
-        pass
+    # try:
+    #     env_core.reset_counter = 5000
+    # except:
+    #     pass
 
     with torch.no_grad():
         value, action, _, recurrent_hidden_states = actor_critic.act(
@@ -285,3 +285,10 @@ with open(args.save_path, "wb") as handle:
 # with open("old_hopper_r", "wb") as handle:
 #     print(list_rewards)
 #     pickle.dump(list_rewards, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# import pickle
+# from matplotlib import pyplot as plt
+
+plt.hist(list_rewards, None, alpha=0.5, label='zero-shot r')
+plt.legend(loc='upper right')
+plt.show()

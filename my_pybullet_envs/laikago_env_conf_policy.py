@@ -153,17 +153,19 @@ class LaikagoConFEnv(gym.Env):
             self._p.setPhysicsEngineParameter(numSolverIterations=100)
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
-            if self.soft_floor_env:
-                self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+            floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+
+            if not self.soft_floor_env:
+                self._p.setCollisionFilterGroupMask(floor_id, -1, 0, 0)
 
             self.robot.reset(self._p)
 
             # should be after reset!
             if self.soft_floor_env:
                 # TODO: for pi12
-                self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=600.0)
+                self._p.changeDynamics(floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
                 for ind in self.robot.feet:
-                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=600.0)
+                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=400.0)
 
         self._p.stepSimulation()
         self.timer = 0
@@ -377,7 +379,7 @@ class LaikagoConFEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 4
+        distance = 5
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

@@ -46,7 +46,8 @@ class LaikagoBulletEnv(gym.Env):
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
-                 randomization_train=False
+                 randomization_train=False,
+                 randomforce_train=False
                  ):
 
         self.render = render
@@ -66,6 +67,7 @@ class LaikagoBulletEnv(gym.Env):
 
         self.soft_floor_env = soft_floor_env
         self.randomization_train = randomization_train
+        self.randomforce_train = randomforce_train
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -159,6 +161,21 @@ class LaikagoBulletEnv(gym.Env):
             if a is not None:
                 self.act = a
                 self.robot.apply_action(a)
+
+            if self.randomforce_train:
+                for foot_ind, link in enumerate(self.robot.feet):
+                    # first dim represents fz
+                    fz = np.random.uniform(-80, 80)
+                    # second dim represents fx
+                    fx = np.random.uniform(-80, 80)
+                    # third dim represents fy
+                    fy = np.random.uniform(-80, 80)
+
+                    utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
+                                                                    [fx, fy, fz],
+                                                                    [0, 0, 0],
+                                                                    self._p)
+
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)
@@ -254,7 +271,7 @@ class LaikagoBulletEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 4
+        distance = 5
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

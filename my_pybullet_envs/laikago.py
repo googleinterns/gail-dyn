@@ -84,7 +84,7 @@ class LaikagoBullet:
         self._p = bullet_client
         self.go_id = self._p.loadURDF(os.path.join(currentdir,
                                                    "assets/laikago/laikago_toes_limits.urdf"),
-                                      list(self.base_init_pos),
+                                      list(self.base_init_pos-[0.043794, 0.0, 0.03]),
                                       list(self._p.getQuaternionFromEuler(list(self.base_init_euler))),
                                       flags=self._p.URDF_USE_SELF_COLLISION,
                                       useFixedBase=0)
@@ -154,10 +154,11 @@ class LaikagoBullet:
         # all q/dq
         # note: no contact bits
         self._p = bullet_client
-        self._p.resetBaseVelocity(self.go_id, state_vec[:3], state_vec[3:6])
         self._p.resetBasePositionAndOrientation(self.go_id,
                                                 state_vec[6:9],
                                                 state_vec[9:13])
+        self._p.resetBaseVelocity(self.go_id, state_vec[:3], state_vec[3:6])
+
         qdq = state_vec[13:]
         assert len(qdq) == len(self.ctrl_dofs) * 2
         init_noise_old = self.init_noise
@@ -209,6 +210,24 @@ class LaikagoBullet:
             link_com, link_quat, *_ = self._p.getLinkState(self.go_id, link_id, computeForwardKinematics=FK)
         return list(link_com), list(link_quat)
 
+    def get_robot_raw_state_vec(self):
+        # state vec following this order:
+        # root dq [6]
+        # root q [3+4(quat)]
+        # all q/dq
+        # note: no contact bits
+        state = []
+        base_vel, base_ang_vel = self._p.getBaseVelocity(self.go_id)
+        state.extend(base_vel)
+        state.extend(base_ang_vel)
+        root_pos, root_orn = self.get_link_com_xyz_orn(-1)
+        state.extend(root_pos)
+        state.extend(root_orn)
+        q, dq = self.get_q_dq(self.ctrl_dofs)
+        state.extend(q)
+        state.extend(dq)
+        return state
+
     def get_robot_observation(self):
         obs = []
 
@@ -249,18 +268,18 @@ class LaikagoBullet:
         obs = np.array(obs) * self.obs_scaling
         return list(obs)
 
-    def transform_obs_to_state(self, obs):
-        # TODO: instead of using this, maybe directly sync states between 2 sims
-        # assume obs fully observable here
-        # root dq [6]
-        # root q [3+4(quat)]
-        # all q/dq
-        obs = np.array(obs) / self.obs_scaling
-        state_vec = list(obs[:6])
-        state_vec += [0.0]  # root x does not matter
-        state_vec += list(obs[6:12])    # root y,z, quat
-        state_vec += list(obs[24:-4])   # (skip 4 feet xyz) q, dq
-        return state_vec
+    # def transform_obs_to_state(self, obs):
+    #     # instead of using this, maybe directly sync states between 2 sims
+    #     # assume obs fully observable here
+    #     # root dq [6]
+    #     # root q [3+4(quat)]
+    #     # all q/dq
+    #     obs = np.array(obs) / self.obs_scaling
+    #     state_vec = list(obs[:6])
+    #     state_vec += [0.0]  # root x does not matter
+    #     state_vec += list(obs[6:12])    # root y,z, quat
+    #     state_vec += list(obs[24:-4])   # (skip 4 feet xyz) q, dq
+    #     return state_vec
 
     def is_root_com_in_support(self):
         root_com, _ = self._p.getBasePositionAndOrientation(self.go_id)

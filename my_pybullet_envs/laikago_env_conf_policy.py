@@ -187,6 +187,9 @@ class LaikagoConFEnv(gym.Env):
         # there is a floor in this session
         self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
         self._imaginary_robot.reset(self._imaginary_p)
+
+        self._imaginary_robot.soft_reset(self._p)
+
         self._imaginary_p.stepSimulation()
 
     def rollout_one_step_imaginary(self):
@@ -198,19 +201,40 @@ class LaikagoConFEnv(gym.Env):
         robo_action = self.obs[self.behavior_obs_len:]
         # print(robo_obs, "in img obs")
         # print(robo_action, "in img act")
-        robo_state_vec = self._imaginary_robot.transform_obs_to_state(robo_obs)
-        self._imaginary_robot.soft_reset_to_state(self._imaginary_p, robo_state_vec)
 
+        # robo_state_vec = self._imaginary_robot.transform_obs_to_state(robo_obs)
+        robo_state_vec = self.robot.get_robot_raw_state_vec()
+
+        self._imaginary_robot.soft_reset_to_state(self._imaginary_p, robo_state_vec)
+        robo_state_i = self._imaginary_robot.get_robot_raw_state_vec()
+
+        robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
         for _ in range(self.control_skip):
             self._imaginary_robot.apply_action(robo_action)
             self._imaginary_p.stepSimulation()
             # if self.render:
             #     time.sleep(self._ts * 0.5)
 
-        return self._imaginary_robot.get_robot_observation()
+        return self._imaginary_robot.get_robot_observation(), robo_state_i       # pre-state_i
+
+    def rollout_one_step_imaginary_same_session(self):
+        # and get the obs vector [no tar vel] in sim
+        assert self.train_dyn
+        assert self.pretrain_dyn
+
+        robo_action = self.obs[self.behavior_obs_len:]
+
+        robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
+        for _ in range(self.control_skip):
+            self.robot.apply_action(robo_action)
+            self._p.stepSimulation()
+
+        return self.robot.get_robot_observation()
 
     def calc_obs_dist_pretrain(self, obs1, obs2):
         # TODO quat dist
+        # print(np.array(obs1))
+        # print("2", np.array(obs2))
         # print(np.linalg.norm(np.array(obs1) - np.array(obs2)))
         # print(1.5-np.linalg.norm(np.array(obs1[36:]) - np.array(obs2[36:])))
         return 1.5-np.linalg.norm(np.array(obs1) - np.array(obs2))
@@ -241,8 +265,14 @@ class LaikagoConFEnv(gym.Env):
             robo_action = utils.perturb(robo_action, 0.05, self.np_random)
 
         if self.pretrain_dyn:
-            img_obs = self.rollout_one_step_imaginary()     # takes the old self.obs
-            # print(np.array(img_obs), "out img obs")
+            # self.state_id = self._p.saveState()
+            img_obs, pre_s_i = self.rollout_one_step_imaginary()     # takes the old self.obs
+            # img_obs = self.rollout_one_step_imaginary_same_session()
+            # self._p.restoreState(self.state_id)
+            pre_s = self.robot.get_robot_raw_state_vec()
+            # print(pre_s_i)
+            # print(pre_s)
+            assert np.allclose(pre_s, pre_s_i, atol=1e-5)
 
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)

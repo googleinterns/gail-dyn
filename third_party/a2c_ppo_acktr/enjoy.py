@@ -37,6 +37,7 @@ import random
 from matplotlib import pyplot as plt
 
 import pickle
+import joblib
 
 from third_party.a2c_ppo_acktr.envs import VecPyTorch, make_vec_envs
 from third_party.a2c_ppo_acktr.utils import get_render_func, get_vec_normalize
@@ -207,6 +208,11 @@ while True:
     #     pass
 
     with torch.no_grad():
+        # value, action, _, recurrent_hidden_states = actor_critic.act(
+        #     obs, recurrent_hidden_states, masks, deterministic=True
+        # )
+        # action += torch.normal(torch.zeros(action.size()), 0.1).to(device)
+        # print(action)
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
@@ -254,6 +260,7 @@ while True:
             f"{args.load_dir}\t"
             f"tr: {reward_total:.1f}\t"
             f"x: {last_dist:.2f}\t"
+            f"tr_ave: {reward_total/len(list_r_per_step):.1f}\t"
         )
         list_rewards.append(reward_total)
         reward_total = 0.0
@@ -281,14 +288,18 @@ while True:
 with open(args.save_path, "wb") as handle:
     # print(all_trajs)
     pickle.dump(all_trajs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # joblib.dump(all_trajs, handle)
+
+# import gzip, pickle, pickletools
+# with gzip.open(args.save_path, "wb") as f:
+#     pickled = pickle.dumps(all_trajs)
+#     optimized_pickle = pickletools.optimize(pickled)
+#     f.write(optimized_pickle)
 
 # with open("old_hopper_r", "wb") as handle:
 #     print(list_rewards)
 #     pickle.dump(list_rewards, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-# import pickle
-# from matplotlib import pyplot as plt
-
-plt.hist(list_rewards, None, alpha=0.5, label='zero-shot r')
+plt.hist(list_rewards, None, alpha=0.5, label='r hist')
 plt.legend(loc='upper right')
 plt.show()

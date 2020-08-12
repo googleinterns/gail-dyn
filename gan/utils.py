@@ -14,7 +14,8 @@
 
 import torch
 import numpy as np
-import pickle
+import gzip, pickle, pickletools
+import joblib
 import os
 
 
@@ -112,6 +113,11 @@ def load_combined_sas_from_pickle(pathname, downsample_freq=1, load_num_trajs=No
     # if load_num_trajs None, load all trajs
     with open(pathname, "rb") as handle:
         saved_file = pickle.load(handle)
+    # with open(pathname, "rb") as handle:
+    #     saved_file = joblib.load(handle)
+    # with gzip.open(pathname, 'rb') as f:
+    #     p = pickle.Unpickler(f)
+    #     saved_file = p.load()
 
     n_trajs = len(saved_file)
     # See https://github.com/pytorch/pytorch/issues/14886

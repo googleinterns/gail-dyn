@@ -185,10 +185,20 @@ class LaikagoConFEnv(gym.Env):
         self._imaginary_p.setGravity(0, 0, -10)
         self._imaginary_p.setPhysicsEngineParameter(numSolverIterations=100)
         # there is a floor in this session
-        self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+        floor_i = self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
         self._imaginary_robot.reset(self._imaginary_p)
 
         self._imaginary_robot.soft_reset(self._p)
+
+        # TODO: for pi23
+        damp = np.random.uniform(50.0, 75.0)
+        stiff = np.random.uniform(75.0, 150.0)
+        # # TODO: for pi12
+        # damp = 150.0
+        # stiff = 400.0
+        self._imaginary_p.changeDynamics(floor_i, -1, contactDamping=damp, contactStiffness=stiff)
+        for ind in self.robot.feet:
+            self._imaginary_p.changeDynamics(self._imaginary_robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
         self._imaginary_p.stepSimulation()
 
@@ -237,7 +247,10 @@ class LaikagoConFEnv(gym.Env):
         # print("2", np.array(obs2))
         # print(np.linalg.norm(np.array(obs1) - np.array(obs2)))
         # print(1.5-np.linalg.norm(np.array(obs1[36:]) - np.array(obs2[36:])))
-        return 1.5-np.linalg.norm(np.array(obs1) - np.array(obs2))
+        # return -np.mean(np.abs((np.array(obs1[:36]) - np.array(obs2[:36])) / np.array(obs2[:36]))) * 100
+        return 0.4-np.sum(np.abs(np.array(obs1[:36]) - np.array(obs2[:36])))      # obs len 48
+        # return 6.0 -np.sum(np.abs(np.array(obs1[3:]) - np.array(obs2[3:]))) \
+        #        -np.sum(np.abs(np.array(obs1[:6]) - np.array(obs2[:6]))) * 20.0    # obs len 48
 
     def step(self, a):
 

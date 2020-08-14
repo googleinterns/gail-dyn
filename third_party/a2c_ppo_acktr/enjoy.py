@@ -42,13 +42,27 @@ import joblib
 from third_party.a2c_ppo_acktr.envs import VecPyTorch, make_vec_envs
 from third_party.a2c_ppo_acktr.utils import get_render_func, get_vec_normalize
 from third_party.a2c_ppo_acktr.arguments import parse_args_with_unknown
-from gan.utils import unwrap, load, load_gail_discriminator
+from gan.utils import unwrap, wrap, load, load_gail_discriminator
 
 
 def plot_avg_dis_reward(args, avg_reward_list, dxs):
     env_name = args.env_name
     _, axs = plt.subplots(2, 1)
     axs[0].plot(avg_reward_list)
+    # plt.title('Average Dis Reward, Env: {}'.format(env_name))
+    plt.xlabel('steps')
+    # plt.ylabel('average reward')
+    axs[1].plot(dxs)
+    plt.show()
+    np.save(os.path.join('./imgs', env_name + '_avg_dreward.npy'), np.array(avg_reward_list))
+    plt.savefig(os.path.join('./imgs', env_name + '_avg_dreward.png'))
+    input("press enter plt")
+
+def plot_avg_dis_reward_2(args, avg_reward_list, avg_reward_list_2,  dxs):
+    env_name = args.env_name
+    _, axs = plt.subplots(2, 1)
+    axs[0].plot(avg_reward_list)
+    axs[0].plot(avg_reward_list_2)
     # plt.title('Average Dis Reward, Env: {}'.format(env_name))
     plt.xlabel('steps')
     # plt.ylabel('average reward')
@@ -196,10 +210,12 @@ list_r_per_step = []
 dist = 0
 last_dist = 0
 
-dis_rewards = None
+dis_rewards_imaginary = None
+dis_rewards_real = None
 dxs = []
 if args.load_dis:
-    dis_rewards = []
+    dis_rewards_imaginary = []
+    dis_rewards_real = []
 
 while True:
     # try:
@@ -239,10 +255,19 @@ while True:
         cur_traj.append(tuple_sas)
 
     if args.load_dis:
-        # print("aaa")
         dis_action = obs[:, :env_core.behavior_obs_len]
         dis_r = discri.predict_prob_single_step(dis_state, dis_action)
-        dis_rewards.append(unwrap(dis_r, is_cuda=is_cuda))
+        dis_rewards_real.append(unwrap(dis_r, is_cuda=is_cuda))
+
+        try:
+            # print("aaa")
+            obs_i = env_core.return_imaginary_obs()
+            dis_action = obs_i[:env_core.behavior_obs_len]      # dis action is next state
+            dis_action = wrap(dis_action, is_cuda=is_cuda)
+            dis_r = discri.predict_prob_single_step(dis_state, dis_action)
+            dis_rewards_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
+        except:
+            pass
 
     dxs.append(env_core.get_ave_dx())
 
@@ -276,11 +301,13 @@ while True:
             cur_traj = []
 
         if args.load_dis:
-            plot_avg_dis_reward(args, dis_rewards, dxs)
-            dis_rewards = []
+            plot_avg_dis_reward_2(args, dis_rewards_imaginary, dis_rewards_real, list_r_per_step)
+            dis_rewards_imaginary = []
+            dis_rewards_real = []
         else:
             # plot_avg_dis_reward(args, list_r_per_step, dxs)
-            list_r_per_step = []
+            pass
+        list_r_per_step = []
         dxs = []
 
     masks.fill_(0.0 if done else 1.0)

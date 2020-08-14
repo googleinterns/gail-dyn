@@ -188,7 +188,7 @@ class LaikagoConFEnv(gym.Env):
         floor_i = self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
         self._imaginary_robot.reset(self._imaginary_p)
 
-        self._imaginary_robot.soft_reset(self._p)
+        self._imaginary_robot.soft_reset(self._imaginary_p)
 
         # TODO: for pi23
         damp = np.random.uniform(50.0, 75.0)
@@ -279,7 +279,7 @@ class LaikagoConFEnv(gym.Env):
 
         if self.pretrain_dyn:
             # self.state_id = self._p.saveState()
-            img_obs, pre_s_i = self.rollout_one_step_imaginary()     # takes the old self.obs
+            self.img_obs, pre_s_i = self.rollout_one_step_imaginary()     # takes the old self.obs
             # img_obs = self.rollout_one_step_imaginary_same_session()
             # self._p.restoreState(self.state_id)
             pre_s = self.robot.get_robot_raw_state_vec()
@@ -333,7 +333,7 @@ class LaikagoConFEnv(gym.Env):
             reward += -y_1 * 0.5
             # print("dev pen", -y_1*0.5)
         else:
-            reward = self.calc_obs_dist_pretrain(img_obs[:-4], self.obs[:len(img_obs[:-4])])
+            reward = self.calc_obs_dist_pretrain(self.img_obs[:-4], self.obs[:len(self.img_obs[:-4])])
 
         # print("______")
         # print(in_support)
@@ -357,6 +357,13 @@ class LaikagoConFEnv(gym.Env):
         # not_done = True
 
         return self.obs, reward, not not_done, {}
+
+    def return_imaginary_obs(self):
+        # mods self.obs
+        obs_i = np.copy(self.obs)
+        # obs_i[:len(self.img_obs[:-4])] = self.img_obs[:-4]
+        obs_i[:len(self.img_obs)] = self.img_obs
+        return obs_i
 
     def apply_scale_clip_conf_from_pi(self, con_f):
 

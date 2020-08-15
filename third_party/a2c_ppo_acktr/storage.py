@@ -30,8 +30,9 @@ def _flatten_helper(T, N, _tensor):
 
 class RolloutStorage(object):
     def __init__(self, num_steps, num_processes, obs_shape, action_space,
-                 recurrent_hidden_state_size):
+                 recurrent_hidden_state_size, feat_len):
         self.obs = torch.zeros(num_steps + 1, num_processes, *obs_shape)
+        self.obs_feat = torch.zeros(num_steps + 1, num_processes, feat_len)
         self.recurrent_hidden_states = torch.zeros(
             num_steps + 1, num_processes, recurrent_hidden_state_size)
         self.rewards = torch.zeros(num_steps, num_processes, 1)
@@ -56,6 +57,7 @@ class RolloutStorage(object):
 
     def to(self, device):
         self.obs = self.obs.to(device)
+        self.obs_feat = self.obs_feat.to(device)
         self.recurrent_hidden_states = self.recurrent_hidden_states.to(device)
         self.rewards = self.rewards.to(device)
         self.value_preds = self.value_preds.to(device)
@@ -66,8 +68,9 @@ class RolloutStorage(object):
         self.bad_masks = self.bad_masks.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards, masks, bad_masks):
+               value_preds, rewards, masks, bad_masks, obs_feat):
         self.obs[self.step + 1].copy_(obs)
+        self.obs_feat[self.step + 1].copy_(obs_feat)
         self.recurrent_hidden_states[self.step +
                                      1].copy_(recurrent_hidden_states)
         self.actions[self.step].copy_(actions)
@@ -91,6 +94,7 @@ class RolloutStorage(object):
 
     def after_update(self):
         self.obs[0].copy_(self.obs[-1])
+        self.obs_feat[0].copy_(self.obs_feat[-1])
         self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[-1])
         self.masks[0].copy_(self.masks[-1])
         self.bad_masks[0].copy_(self.bad_masks[-1])
@@ -163,6 +167,8 @@ class RolloutStorage(object):
         for indices in sampler:
             obs_batch = self.obs[:-1].view(-1, *self.obs.size()[2:])[indices]
             next_obs_batch = self.obs[1:].view(-1, *self.obs.size()[2:])[indices]
+            obs_feat_batch = self.obs_feat[:-1].view(-1, *self.obs_feat.size()[2:])[indices]
+            next_obs_feat_batch = self.obs_feat[1:].view(-1, *self.obs_feat.size()[2:])[indices]
             recurrent_hidden_states_batch = self.recurrent_hidden_states[:-1].view(
                 -1, self.recurrent_hidden_states.size(-1))[indices]
             actions_batch = self.actions.view(-1,
@@ -182,7 +188,7 @@ class RolloutStorage(object):
             # print("afterobs", next_obs_batch[5::num_processes])
             yield obs_batch, recurrent_hidden_states_batch, actions_batch, \
                   value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ, \
-                  next_obs_batch
+                  obs_feat_batch, next_obs_feat_batch           # last two only for gail-dyn
 
     def recurrent_generator(self, advantages, num_mini_batch):
         num_processes = self.rewards.size(1)

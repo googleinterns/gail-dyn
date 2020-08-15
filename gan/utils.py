@@ -17,6 +17,7 @@ import numpy as np
 import gzip, pickle, pickletools
 import joblib
 import os
+import pybullet
 
 
 def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
@@ -132,6 +133,38 @@ def load_combined_sas_from_pickle(pathname, downsample_freq=1, load_num_trajs=No
             break
     return np.array(XY)
 
+def load_feat_sas_from_pickle(pathname, downsample_freq=1, load_num_trajs=None):
+    # if load_num_trajs None, load all trajs
+    with open(pathname, "rb") as handle:
+        saved_file = pickle.load(handle)
+    # with open(pathname, "rb") as handle:
+    #     saved_file = joblib.load(handle)
+    # with gzip.open(pathname, 'rb') as f:
+    #     p = pickle.Unpickler(f)
+    #     saved_file = p.load()
+
+    n_trajs = len(saved_file)
+    # See https://github.com/pytorch/pytorch/issues/14886
+    # .long() for fixing bug in torch v0.4.1
+    start_idx = torch.randint(
+        0, downsample_freq, size=(n_trajs,)).long()
+
+    sas = []
+    for traj_idx, traj_tuples in saved_file.items():
+        sas.extend(traj_tuples[start_idx[traj_idx]::downsample_freq])  # downsample the rows
+        if load_num_trajs and traj_idx >= load_num_trajs - 1:
+            break
+
+    s = list(np.array(sas)[:, 0])
+    a = list(np.array(sas)[:, 1])
+    s_next = list(np.array(sas)[:, 2])
+
+    print(np.array(s).shape)
+    print(np.array(a).shape)
+    print(np.array(s_next).shape)
+
+    return np.array(s), np.array(a), np.array(s_next)
+
 
 def get_link_com_xyz_orn(body_id, link_id, bullet_session):
     # get the world transform (xyz and quaternion) of the Center of Mass of the link
@@ -150,3 +183,28 @@ def apply_external_world_force_on_local_point(body_id, link_id, world_force, loc
     local_force, _ = bullet_session.multiplyTransforms([0., 0, 0], inv_link_quat, world_force, [0, 0, 0, 1])
     bullet_session.applyExternalForce(body_id, link_id, local_force,
                                       local_com_offset, flags=bullet_session.LINK_FRAME)
+
+
+def replace_obs_with_feat(obs, is_cuda : bool, feat_select_func=None, return_tensor=False):
+    # obs is a tensor of (num_processes, obs_dim)
+    # if feat_select none, selection is identity function where obs is unchanged
+
+    def identity(x):
+        return x
+
+    if feat_select_func is None:
+        feat_select_func = identity
+
+    obs = obs.cpu() if is_cuda else obs
+    obs_un = obs.detach().numpy()
+    feat_chunk = []
+    for obs_each in obs_un:
+        feat_chunk.append(feat_select_func(obs_each))
+
+    if return_tensor:
+        feat_chunk = torch.Tensor(feat_chunk)
+        if is_cuda:
+            feat_chunk = feat_chunk.cuda()
+
+    return feat_chunk
+

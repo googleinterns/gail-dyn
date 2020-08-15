@@ -109,7 +109,16 @@ def main():
     text_file.close()
     print("source file stored")
     # input("source file stored press enter")
-    dummy.close()
+
+    dummy.reset()
+    try:
+        # TODO: hopper
+        feat_select_func = dummy.robot.feature_selection_laika
+        # feat_select_func = dummy.robot.feature_selection_all_laika
+    except:
+        feat_select_func = None
+
+    # dummy.close()
 
     logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     rootLogger = logging.getLogger()
@@ -150,14 +159,22 @@ def main():
     if args.gail:
         assert len(envs.observation_space.shape) == 1
 
+        # TODO: s1 is just s0 shifted by 1 in time.
+        expert_s0, expert_a0, expert_s1 = gan_utils.load_feat_sas_from_pickle(
+            args.gail_traj_path,
+            downsample_freq=int(args.gail_downsample_frequency),
+            load_num_trajs=args.gail_traj_num
+        )
+
+        s_dim = expert_s0.shape[1]
+        a_dim = expert_a0.shape[1]
+
         if not args.gail_dyn:
-            s_dim = envs.observation_space.shape[0]
-            a_dim = envs.action_space.shape[0]
-        else:
-            s_dim = 52  # TODO: hardcoded for laika for now
-            a_dim = 12
-            # s_dim = 11  # TODO: hardcoded for hopper for now
-            # a_dim = 3
+            assert s_dim == envs.observation_space.shape[0]
+            assert a_dim == envs.action_space.shape[0]
+        # else:
+        # s_dim is s_feat_dim, the following not ture anymore
+        # assert s_dim + a_dim == envs.observation_space.shape[0]
 
         if not args.gail_dyn:
             discr = gail.Discriminator(
@@ -169,21 +186,11 @@ def main():
                 s_dim + a_dim + s_dim, args.gail_dis_hdim,
                 device)
 
-        expert_tuples = gan_utils.load_combined_sas_from_pickle(
-            args.gail_traj_path,
-            downsample_freq=int(args.gail_downsample_frequency),
-            load_num_trajs=args.gail_traj_num
-        )
-
         if not args.gail_dyn:
-            expert_s0 = expert_tuples[:, :s_dim]
-            expert_a0 = expert_tuples[:, s_dim:(s_dim + a_dim)]
             expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
         else:
             # learning dyn gail
-            assert expert_tuples.shape[1] == s_dim * 2 + a_dim
-            expert_s0a0 = expert_tuples[:, :(s_dim + a_dim)]
-            expert_s1 = expert_tuples[:, (s_dim + a_dim):]
+            expert_s0a0 = np.concatenate((expert_s0, expert_a0), axis=1)
             expert_dataset = TensorDataset(Tensor(expert_s0a0), Tensor(expert_s1))
 
         drop_last = len(expert_dataset) > args.gail_batch_size
@@ -196,12 +203,18 @@ def main():
         discr = None
         gail_train_loader = None
 
+    obs = envs.reset()
+    obs_feat = gan_utils.replace_obs_with_feat(obs, args.cuda, feat_select_func, return_tensor=True)
+    feat_len = obs_feat.size(1)     # TODO: multi-dim obs broken
+
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space.shape, envs.action_space,
-                              actor_critic.recurrent_hidden_state_size)
+                              actor_critic.recurrent_hidden_state_size,
+                              feat_len)
 
-    obs = envs.reset()
+
     rollouts.obs[0].copy_(obs)
+    rollouts.obs_feat[0].copy_(obs_feat)
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10000)
@@ -228,6 +241,7 @@ def main():
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
+            obs_feat = gan_utils.replace_obs_with_feat(obs, args.cuda, feat_select_func, return_tensor=True)
 
             for info in infos:
                 if 'episode' in info.keys():
@@ -240,7 +254,7 @@ def main():
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, reward, masks, bad_masks)
+                            action_log_prob, value, reward, masks, bad_masks, obs_feat)
 
         with torch.no_grad():
             next_value = actor_critic.get_value(
@@ -260,7 +274,7 @@ def main():
             for _ in range(gail_epoch):
                 gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,
                                                                    utils.get_vec_normalize(envs)._obfilt,
-                                                                   args.gail_dyn, s_dim)
+                                                                   args.gail_dyn, a_dim)    # TODO
 
             # overwriting rewards by gail
             if not args.gail_dyn:
@@ -270,9 +284,10 @@ def main():
                         rollouts.masks[step])
             else:
                 for step in range(args.num_steps):
-                    next_obs_s = rollouts.obs[step + 1, :, :s_dim]  # second dim is num_proc
+                    cur_obs_a = rollouts.obs[step, :, -a_dim:]  # second dim is num_proc
+                    cur_obs_feat_a = torch.cat((rollouts.obs_feat[step], cur_obs_a), 1)
                     rollouts.rewards[step], returns = discr.predict_reward(
-                        rollouts.obs[step], next_obs_s, args.gamma,
+                        cur_obs_feat_a, rollouts.obs_feat[step + 1], args.gamma,
                         rollouts.masks[step])
 
             # final returns

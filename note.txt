@@ -242,8 +242,68 @@ List of attempts:
 Generator too weak?
 feedback from D too sparse?
 # both seem to point to pre-training
+# seem to be share functionality with GT metric
+
+# during pre-train, rather than use gail reward, use discrepancy to sim s+ as reward
+# Need this functionality:
+    # initialize a different session?
+    # simply reset robot to (s,a) with floor
+    # roll one step to get s+
+# GT metric, during testing of env
+# does that agree with D output.
+
+
+TODO: design some experiment to show whether the improvement comes from robust policy
+(i.e. do we learn anything?)
+
+# about the local minima of blowing up everything.
 
 # generator dropout?
+
+
+
+
+# need two figures comparing improvements before and after, finish weekly summary
+# think about what the action noise changes
+# A lot of tuning which we don't like:
+    # strange thing about alive pen - if ave low at beginning, seems always low...
+# finish pre-train and metric analysis
+
+
+# TODO: check why the new data does not work..
+
+
+Rand force 160/80/120(todo)
+# the problem with this baseline is that it does not mimick softness at all
+# different from randomization baseline
+# 2 cases: both high and low(high force) reward during training fail in testing
+
+
+bascially changed from tuning alive pen to gamma
+
+maybe do need to learn a termination helper somehow
+
+
+
+1. set up the metric (looks like the diff between trained hard dyn & hard floor is as large as hard floor & soft floor)
+    large portion of L2 errors come from dq/10
+    # TODO: usage of absolute x
+2. new behavior policy / new gap
+3. set up baselines: PPO fine-tine; random force; randomization
+
+Gamma
+“Fine-tune” policy using GAIL dynamics trained with a large hard-floor Source Env dataset.
+
+4. reverse the metric rolling out to figure out why D thinks negatively
+5. see if D matches q or dq distance
+6. read rl-cycleGAN
+
+Got some odd results: gail dyn learned on hard floor, by L2 per-step error, is closer to soft floor than to hard floor (both dyn)
+; gail dyn learned on soft floor is farther away from soft than dyn learned on hard floor (much softer??)
+
+
+dis at lower spatial freq than gen
+
 
 
 

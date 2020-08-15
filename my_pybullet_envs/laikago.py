@@ -309,6 +309,36 @@ class LaikagoBullet:
         return (feet_min_x - 0.05 < root_com[0]) and (root_com[0] < feet_max_x + 0.05) \
                and (feet_min_y - 0.05 < root_com[1]) and (root_com[1] < feet_max_y + 0.05)
 
+    def feature_selection_laika(self, full_obs):
+        # TODO: the vel part obs is scaled
+        # TODO should further utilize symmetry
+        # hard coded indices
+        feature = []
+        # root lin vel
+        feature.extend(full_obs[:3])
+        # root height
+        feature.extend([full_obs[7]])
+        # root rpy
+        rpy = pybullet.getEulerFromQuaternion(full_obs[8:12])
+        feature.extend(rpy)
+        # q
+        q = np.array(full_obs[24:36])
+        pos_mid = 0.5 * (self.ll + self.ul)
+        q_scaled = 2 * (q - pos_mid) / (self.ul - self.ll)
+        joints_at_limit = (np.abs(q_scaled) > 0.97).astype(int)
+        feature.extend(joints_at_limit)
+
+        feature.extend([np.sum(np.square(q - self.init_q))])
+
+        dq = full_obs[36:48]
+        feature.extend([np.sum(np.abs(dq)) / 10.0])     # make it even smaller
+
+        return feature
+
+    def feature_selection_all_laika(self, full_obs):
+        feature = list(full_obs[:52])
+        return feature
+
 # if __name__ == "__main__":
 #     import pybullet as p
 #

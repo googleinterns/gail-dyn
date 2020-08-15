@@ -42,7 +42,7 @@ import joblib
 from third_party.a2c_ppo_acktr.envs import VecPyTorch, make_vec_envs
 from third_party.a2c_ppo_acktr.utils import get_render_func, get_vec_normalize
 from third_party.a2c_ppo_acktr.arguments import parse_args_with_unknown
-from gan.utils import unwrap, wrap, load, load_gail_discriminator
+from gan.utils import *
 
 
 def plot_avg_dis_reward(args, avg_reward_list, dxs):
@@ -168,6 +168,12 @@ env = make_vec_envs(
 # dont know why there are so many wrappers in make_vec_envs...
 env_core = env.venv.venv.envs[0].env.env
 
+try:
+    # feat_select_func = env_core.robot.feature_selection_all_laika
+    feat_select_func = env_core.robot.feature_selection_laika
+except:
+    feat_select_func = None
+
 # TODO: not working yet
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
@@ -237,10 +243,13 @@ while True:
             action += (torch.rand(action.size()).to(device) - 0.5) * 0.3
 
     if args.save_traj:
-        tuple_sas = list(unwrap(obs, is_cuda=is_cuda))
+        tuple_sas = []
+        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
+        tuple_sas.append(obs_feat[0])   # only one process env
 
     if args.load_dis:
-        dis_state = obs
+        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
+        dis_state = torch.cat((obs_feat, obs[:, env_core.behavior_obs_len:]), 1)
     # Obser reward and next obs
     obs, reward, done, _ = env.step(action)
     list_r_per_step.append(reward)
@@ -248,22 +257,24 @@ while True:
     if args.save_traj:
         # print("action", action)
         # print("obs", obs)
-        tuple_sas += list(unwrap(action, is_cuda=is_cuda))
-        tuple_sas += list(unwrap(obs, is_cuda=is_cuda))
+        tuple_sas.append(list(unwrap(action, is_cuda=is_cuda)))
+
+        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
+        tuple_sas.append(obs_feat[0])
+
         # print(tuple_sas)
-        assert len(tuple_sas) == env_core.action_dim + env_core.obs_dim * 2
         cur_traj.append(tuple_sas)
 
     if args.load_dis:
-        dis_action = obs[:, :env_core.behavior_obs_len]
+        dis_action = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
         dis_r = discri.predict_prob_single_step(dis_state, dis_action)
         dis_rewards_real.append(unwrap(dis_r, is_cuda=is_cuda))
 
         try:
-            # print("aaa")
             obs_i = env_core.return_imaginary_obs()
             dis_action = obs_i[:env_core.behavior_obs_len]      # dis action is next state
             dis_action = wrap(dis_action, is_cuda=is_cuda)
+            dis_action = replace_obs_with_feat(dis_action, is_cuda, feat_select_func, return_tensor=True)
             dis_r = discri.predict_prob_single_step(dis_state, dis_action)
             dis_rewards_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
         except:
@@ -301,6 +312,9 @@ while True:
             cur_traj = []
 
         if args.load_dis:
+            print(
+                f"{np.array(dis_rewards_real).mean()}\t"
+            )
             plot_avg_dis_reward_2(args, dis_rewards_imaginary, dis_rewards_real, list_r_per_step)
             dis_rewards_imaginary = []
             dis_rewards_real = []

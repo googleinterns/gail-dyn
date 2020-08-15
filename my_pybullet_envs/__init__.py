@@ -20,6 +20,7 @@ from .laikago_env import LaikagoBulletEnv
 from .laikago_env_ori import LaikagoBulletEnvOri
 from .hopper_env_conf_policy import HopperConFEnv
 from .laikago_env_conf_policy import LaikagoConFEnv
+# from .laikago_env_conf_reverse_env import LaikagoConFEnvRev
 
 
 def register(id, *args, **kvargs):
@@ -66,6 +67,12 @@ register(
     entry_point="my_pybullet_envs:LaikagoConFEnv",
     max_episode_steps=500,
 )
+
+# register(
+#     id="LaikagoConFEnv-v2",
+#     entry_point="my_pybullet_envs:LaikagoConFEnvRev",
+#     max_episode_steps=500,
+# )
 
 def getList():
     btenvs = [

@@ -37,6 +37,7 @@ class LaikagoBulletEnv(gym.Env):
                  control_skip=10,
                  using_torque_ctrl=True,
 
+                 no_dq=False,
                  max_tar_vel=2.5,
                  energy_weight=0.1,
                  jl_weight=0.5,
@@ -77,7 +78,8 @@ class LaikagoBulletEnv(gym.Env):
         self.np_random = None
         self.robot = LaikagoBullet(init_noise=self.init_noise,
                                    time_step=self._ts,
-                                   np_random=self.np_random)
+                                   np_random=self.np_random,
+                                   no_dq=no_dq)
         self.seed(0)  # used once temporarily, will be overwritten outside though superclass api
         self.viewer = None
         self.timer = 0
@@ -230,7 +232,7 @@ class LaikagoBulletEnv(gym.Env):
 
         # print("------")
         obs = self.get_extended_observation()
-        rpy = self._p.getEulerFromQuaternion(obs[9:13])
+        rpy = self._p.getEulerFromQuaternion(obs[8:12])
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 

@@ -37,6 +37,7 @@ import gym, gym.utils.seeding
 import numpy as np
 import math
 from gan import utils
+import pybullet
 
 import os
 import inspect
@@ -49,12 +50,15 @@ class LaikagoBullet:
                  init_noise=True,
                  time_step=1. / 500,
                  np_random=None,
+                 no_dq=False
                  ):
 
         self.init_noise = init_noise
 
         self._ts = time_step
         self.np_random = np_random
+
+        self.no_dq = no_dq
 
         self.base_init_pos = np.array([0, 0, .5])  # starting position
         self.base_init_euler = np.array([1.5708, 0, 1.5708])  # starting orientation
@@ -63,7 +67,10 @@ class LaikagoBullet:
 
         self.max_forces = [30.0] * 12  # joint torque limits    TODO
 
-        self.obs_scaling = np.array([0.2]*3 + [0.1]*3 + [1.0]*(6+12+12) + [0.1]*12 + [1.0]*4)
+        if no_dq:
+            self.obs_scaling = np.array([0.2] * 3 + [0.1] * 3 + [1.0] * (6 + 12 + 12) + [1.0] * 4)
+        else:
+            self.obs_scaling = np.array([0.2]*3 + [0.1]*3 + [1.0]*(6+12+12) + [0.1]*12 + [1.0]*4)
 
         # self.max_forces = [30.0] * 6 + [20.0] * 6
 
@@ -261,7 +268,9 @@ class LaikagoBullet:
         # non-root joint q/dq
         q, dq = self.get_q_dq(self.ctrl_dofs)
         obs.extend(q)
-        obs.extend(dq)
+
+        if not self.no_dq:
+            obs.extend(dq)
 
         obs.extend(contact_bits)
 

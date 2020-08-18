@@ -305,6 +305,44 @@ Got some odd results: gail dyn learned on hard floor, by L2 per-step error, is c
 dis at lower spatial freq than gen
 
 
+# TODO: a list of things we throw away in the current pipeline
+1. value function of behavior policy
+2. value function of gail-dyn-policy
+3. D of gail-dyn
+4. value function of fine-tuned policy
+
+
+Hard floor
+D score ~0.73
+
+soft floor
+D score ~0.78
+
+G
+D score ~0.57
+
+
+
+We would like to learn
+
+compensate previous mistakes?
+
+MPC?
+
+
+
+
+Use longer window for dis input
+0s -0.04s -0.08s -0.12s -0.16s
+
+# need to change D input dim
+# need a new expert loader
+# currently simply split (s,a,s) into (s,a) and s
+
+# need a new policy data generator as well
+
+# need a new predict reward
+
 
 
 

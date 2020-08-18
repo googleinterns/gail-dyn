@@ -115,12 +115,21 @@ class LaikagoConFEnv(gym.Env):
             self.masks = utils.load(
                 dyn_dir, dyn_env_name, self.cuda_env, dyn_iter
             )
+            #
+            # self.discri = utils.load_gail_discriminator(dyn_dir,
+            #                                             dyn_env_name,
+            #                                             self.cuda_env,
+            #                                             dyn_iter)
+            #
+            # self.feat_select_func = self.robot.feature_selection_all_laika
 
         self.reset_counter = 50  # do a hard reset first
         self.obs = []
         self.behavior_obs_len = None
         self.behavior_act_len = None
         self.reset()  # and update init obs
+        #
+        # self.d_scores = []
 
         # set up imaginary session for pre-train
         self.set_up_imaginary_session()
@@ -162,13 +171,15 @@ class LaikagoConFEnv(gym.Env):
 
             # should be after reset!
             if self.soft_floor_env:
-                # TODO: for pi12
-                self._p.changeDynamics(floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
+                damp = np.random.uniform(50.0, 75.0)
+                stiff = np.random.uniform(75.0, 150.0)
+                self._p.changeDynamics(floor_id, -1, contactDamping=damp, contactStiffness=stiff)
                 for ind in self.robot.feet:
-                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=150.0, contactStiffness=400.0)
+                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
         self._p.stepSimulation()
         self.timer = 0
+        # self.d_scores = []
         self.update_extended_observation()
 
         return self.obs
@@ -268,6 +279,10 @@ class LaikagoConFEnv(gym.Env):
                         env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
                     )
                 env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
+            #
+            # env_pi_obs_feat = self.feat_select_func(self.obs)
+            # dis_state = np.concatenate((env_pi_obs_feat, robo_action))
+            # dis_state = utils.wrap(dis_state, is_cuda=self.cuda_env)
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
@@ -355,6 +370,16 @@ class LaikagoConFEnv(gym.Env):
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
+
+        # if not self.train_dyn:
+        #     dis_action = self.feat_select_func(self.obs)
+        #     dis_action = utils.wrap(dis_action, is_cuda=self.cuda_env)
+        #     d_score = self.discri.predict_prob_single_step(dis_state, dis_action)
+        #     self.d_scores.append(utils.unwrap(d_score, is_cuda=self.cuda_env))
+        #     # if len(self.d_scores) > 20 and np.mean(self.d_scores[-20:]) < 0.4:
+        #     #     not_done = False
+        #     # if not not_done or self.timer==1000:
+        #     #     print(np.mean(self.d_scores))
 
         return self.obs, reward, not not_done, {}
 

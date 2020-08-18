@@ -1265,3 +1265,6 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-st
 
 
 08-13 21:03 no dq behavior retrain
+
+
+08-15 12:30 early terminate fine-tune when D score small

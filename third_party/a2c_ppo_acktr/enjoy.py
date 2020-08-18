@@ -45,7 +45,7 @@ from third_party.a2c_ppo_acktr.arguments import parse_args_with_unknown
 from gan.utils import *
 
 
-def plot_avg_dis_reward(args, avg_reward_list, dxs):
+def plot_avg_dis_prob(args, avg_reward_list, dxs):
     env_name = args.env_name
     _, axs = plt.subplots(2, 1)
     axs[0].plot(avg_reward_list)
@@ -58,7 +58,7 @@ def plot_avg_dis_reward(args, avg_reward_list, dxs):
     plt.savefig(os.path.join('./imgs', env_name + '_avg_dreward.png'))
     input("press enter plt")
 
-def plot_avg_dis_reward_2(args, avg_reward_list, avg_reward_list_2,  dxs):
+def plot_avg_dis_prob_2(args, avg_reward_list, avg_reward_list_2, dxs):
     env_name = args.env_name
     _, axs = plt.subplots(2, 1)
     axs[0].plot(avg_reward_list)
@@ -146,7 +146,7 @@ args, extra_dict = parse_args_with_unknown(parser)
 
 np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
 
-is_cuda = True
+is_cuda = False
 device = "cuda" if is_cuda else "cpu"
 
 args.det = not args.non_det
@@ -216,12 +216,12 @@ list_r_per_step = []
 dist = 0
 last_dist = 0
 
-dis_rewards_imaginary = None
-dis_rewards_real = None
+dis_probs_imaginary = None
+dis_probs_real = None
 dxs = []
 if args.load_dis:
-    dis_rewards_imaginary = []
-    dis_rewards_real = []
+    dis_probs_imaginary = []
+    dis_probs_real = []
 
 while True:
     # try:
@@ -238,7 +238,7 @@ while True:
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
-        if args.enlarge_act_range:
+        if args.enlarge_act_range:                  # TODO, name duplicate
             # 15% noise if a clipped to -1, 1
             action += (torch.rand(action.size()).to(device) - 0.5) * 0.3
 
@@ -268,7 +268,11 @@ while True:
     if args.load_dis:
         dis_action = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
         dis_r = discri.predict_prob_single_step(dis_state, dis_action)
-        dis_rewards_real.append(unwrap(dis_r, is_cuda=is_cuda))
+        dis_probs_real.append(unwrap(dis_r, is_cuda=is_cuda))
+
+        # if len(dis_probs_real)>20 and np.mean(dis_probs_real[-20:]) < 0.4:
+        #     done = True
+        #     env.reset()
 
         try:
             obs_i = env_core.return_imaginary_obs()
@@ -276,7 +280,7 @@ while True:
             dis_action = wrap(dis_action, is_cuda=is_cuda)
             dis_action = replace_obs_with_feat(dis_action, is_cuda, feat_select_func, return_tensor=True)
             dis_r = discri.predict_prob_single_step(dis_state, dis_action)
-            dis_rewards_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
+            dis_probs_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
         except:
             pass
 
@@ -313,13 +317,13 @@ while True:
 
         if args.load_dis:
             print(
-                f"{np.array(dis_rewards_real).mean()}\t"
+                f"{np.array(dis_probs_real).mean()}\t"
             )
-            plot_avg_dis_reward_2(args, dis_rewards_imaginary, dis_rewards_real, list_r_per_step)
-            dis_rewards_imaginary = []
-            dis_rewards_real = []
+            # plot_avg_dis_prob_2(args, dis_probs_imaginary, dis_probs_real, list_r_per_step)
+            dis_probs_imaginary = []
+            dis_probs_real = []
         else:
-            # plot_avg_dis_reward(args, list_r_per_step, dxs)
+            # plot_avg_dis_prob(args, list_r_per_step, dxs)
             pass
         list_r_per_step = []
         dxs = []

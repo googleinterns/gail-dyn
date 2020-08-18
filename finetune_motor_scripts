@@ -1,0 +1,15 @@
+08-15 12:30
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --save-interval 2 --log-interval 2 \
+--num-steps 2000 --num-processes 4 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo  \
+  --save-dir trained_models_laika_bullet_23_soft_GailDyn_gt_tmptmp --seed 51301  \
+  --warm-start "./trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt" \
+  --act_noise 0 --obs_noise 0 --enlarge_act_range 0
+
+
+ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  \
+ --load-dir trained_models_laika_bullet_23_soft_GailDyn_gt_tmptmp/ppo  --render 1  --non-det 0  --load-dis 0 \
+ --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --soft_floor_env 1  --save-traj 0 \
+ --src-env-name "LaikagoConFEnv-v1"

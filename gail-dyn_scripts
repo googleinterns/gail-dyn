@@ -1,0 +1,245 @@
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_feat.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_feat_0  --seed 50201 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.95
+
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+--load-dir trained_models_Gdyn_laika_bullet_soft23gt_feat_0/ppo --render 1 --non-det 1 --train_dyn 1 \
+--behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0 \
+--load-dis 0 --seed 1099  --enlarge_act_range 1 --act_noise 0 --obs_noise 0
+
+
+det dynamics, non-det motor
+  python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1"  \
+  --load-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo --render 0 --non-det 1 --train_dyn 1 \
+   --behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0 \
+    --load-dis 1 --seed 1099  --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --pretrain_dyn 0 --cuda-env 0
+0.37594079971313477
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -18.9	x: 1.79	tr_ave: -0.2
+0.44395798444747925
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -16.1	x: 2.07	tr_ave: -0.2
+0.4498460590839386
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -23.8	x: 1.89	tr_ave: -0.3
+0.48497846722602844
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -21.3	x: 3.33	tr_ave: -0.2
+0.45832499861717224
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -18.9	x: 1.78	tr_ave: -0.3
+0.4819261133670807
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -20.2	x: 2.38	tr_ave: -0.2
+0.4731708765029907
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -16.2	x: 1.24	tr_ave: -0.3
+0.466117262840271
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -18.4	x: 2.29	tr_ave: -0.2
+0.48321059346199036
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -23.0	x: 3.38	tr_ave: -0.2
+0.47247570753097534
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -21.9	x: 3.20	tr_ave: -0.2
+0.49555808305740356
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -20.3	x: 3.27	tr_ave: -0.2
+0.46302151679992676
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -22.0	x: 3.61	tr_ave: -0.2
+0.4663196802139282
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -5.8	x: 0.19	tr_ave: -0.3
+0.36868685483932495
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -8.1	x: 0.59	tr_ave: -0.2
+0.43847501277923584
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -7.9	x: 0.17	tr_ave: -0.3
+0.523447573184967
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -6.2	x: 0.40	tr_ave: -0.2
+0.4132964015007019
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -10.5	x: 0.20	tr_ave: -0.4
+0.4061146080493927
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: -10.7	x: 1.35	tr_ave: -0.2
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1"  \
+ --load-dir trained_models_laika_bullet_23/ppo  --render 0  --non-det 0  --load-dis 0  --seed 109 --enlarge_act_range 0 \
+  --act_noise 0 --obs_noise 0  --save-traj 0  --src-env-name "LaikagoBulletEnv-v1" \
+  --dyn-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo --train-dyn 0 --cuda-env 0
+
+0.5856189
+trained_models_laika_bullet_23/ppo	tr: 1170.8	x: 5.52	tr_ave: 8.2
+0.5920636
+trained_models_laika_bullet_23/ppo	tr: 927.1	x: 4.17	tr_ave: 7.5
+0.59265876
+trained_models_laika_bullet_23/ppo	tr: 879.5	x: 3.60	tr_ave: 7.4
+0.6127739
+trained_models_laika_bullet_23/ppo	tr: 1002.7	x: 4.46	tr_ave: 7.8
+0.5977122
+trained_models_laika_bullet_23/ppo	tr: 1226.6	x: 5.47	tr_ave: 8.3
+0.6126633
+trained_models_laika_bullet_23/ppo	tr: 1112.6	x: 4.64	tr_ave: 8.1
+0.614917
+trained_models_laika_bullet_23/ppo	tr: 887.4	x: 3.51	tr_ave: 7.5
+0.60887915
+trained_models_laika_bullet_23/ppo	tr: 1144.0	x: 5.23	tr_ave: 8.2
+0.59316444
+trained_models_laika_bullet_23/ppo	tr: 1081.9	x: 4.93	tr_ave: 8.0
+0.6078873
+trained_models_laika_bullet_23/ppo	tr: 998.6	x: 4.32	tr_ave: 7.9
+
+
+
+# simplified: det dynamics, non-det motor
+python -m third_party.a2c_ppo_acktr.enjoy_simple_debug --env-name "LaikagoConFEnv-v3"  \
+ --load-dir trained_models_laika_bullet_23/ppo  --render 0  --non-det 1  --load-dis 0  --seed 109  \
+  --src-env-name "LaikagoBulletEnv-v1"   --dyn-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo \
+  --train-dyn 0 --cuda-env 0
+
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 33.54	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 16.05	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 31.32	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 30.65	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 29.64	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 30.50	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 31.64	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 18.14	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 32.34	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 32.61	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 31.76	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 10.31	tr_ave: 0.0
+trained_models_laika_bullet_23/ppo	tr: 0.0	x: 10.25	tr_ave: 0.0
+
+| loading policy from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1.pt
+| loading policy from trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt
+
+| loading policy from trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt
+| loading policy from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1.pt
+
+
+python -m third_party.a2c_ppo_acktr.enjoy_simple_debug --env-name "LaikagoConFEnv-v3"  \
+  --load-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo --render 0 --non-det 0 --train_dyn 1 \
+     --behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --seed 109 \
+      --cuda-env 0 --src-env-name "LaikagoConFEnv-v1"
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 30.41	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 28.80	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 12.09	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 8.69	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 12.96	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 15.66	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 9.57	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 29.80	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 23.01	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 30.66	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 21.90	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 29.57	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 29.76	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 4.20	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 14.28	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 3.56	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 21.86	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 19.60	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 27.67	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 26.33	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 31.63	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 29.51	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 5.62	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 28.28	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 28.96	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 24.77	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 6.80	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 31.13	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 28.77	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 27.51	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 26.13	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 29.52	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 28.71	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 8.32	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 30.62	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 10.61	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 30.32	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 4.17	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 8.54	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 20.33	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 12.16	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 30.25	tr_ave: 0.0
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 0.0	x: 15.09	tr_ave: 0.0
+
+
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+  --load-dir trained_models_laika_bullet_23/ppo  --render 0  --non-det 1  --load-dis 0  --seed 109 \
+  --enlarge_act_range 0   --act_noise 0 --obs_noise 0  --save-traj 0  --src-env-name "LaikagoBulletEnv-v1" \
+    --dyn-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo --train-dyn 0 --cuda-env 0
+pybullet build time: Jun 19 2020 04:01:58
+| loading policy from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1.pt
+| loading gail discriminator from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1_D.pt
+| loading policy from trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt
+0.24101123
+trained_models_laika_bullet_23/ppo	tr: 5851.0	x: 33.54	tr_ave: 11.7
+0.3123258
+trained_models_laika_bullet_23/ppo	tr: 3322.6	x: 16.05	tr_ave: 10.7
+0.27057034
+trained_models_laika_bullet_23/ppo	tr: 5790.5	x: 31.32	tr_ave: 11.6
+0.21684466
+trained_models_laika_bullet_23/ppo	tr: 5895.8	x: 30.65	tr_ave: 11.8
+0.22591425
+trained_models_laika_bullet_23/ppo	tr: 5831.8	x: 29.64	tr_ave: 11.7
+0.23901588
+trained_models_laika_bullet_23/ppo	tr: 5852.4	x: 30.50	tr_ave: 11.7
+0.2331255
+trained_models_laika_bullet_23/ppo	tr: 5911.9	x: 31.64	tr_ave: 11.8
+0.28792
+trained_models_laika_bullet_23/ppo	tr: 3719.9	x: 18.14	tr_ave: 10.9
+0.21139127
+trained_models_laika_bullet_23/ppo	tr: 5907.1	x: 32.34	tr_ave: 11.8
+0.23447369
+trained_models_laika_bullet_23/ppo	tr: 5856.2	x: 32.61	tr_ave: 11.7
+0.25726023
+trained_models_laika_bullet_23/ppo	tr: 5782.7	x: 31.76	tr_ave: 11.6
+0.38627416
+trained_models_laika_bullet_23/ppo	tr: 2158.6	x: 10.31	tr_ave: 9.6
+
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+   --load-dir trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo --render 1 --non-det 0 --train_dyn 1 \
+      --behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0   \
+        --load-dis 1 --seed 109  --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --pretrain_dyn 0 --cuda-env 0
+pybullet build time: Jun 19 2020 04:01:58
+| loading policy from trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt
+| loading policy from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1.pt
+| loading gail discriminator from trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo/LaikagoConFEnv-v1_D.pt
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5760.1	x: 30.80	tr_ave: 11.5
+0.2821581959724426
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5749.5	x: 27.07	tr_ave: 11.5
+0.2726302444934845
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5758.4	x: 28.95	tr_ave: 11.5
+0.2689461410045624
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5915.1	x: 29.29	tr_ave: 11.8
+0.21546542644500732
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5831.6	x: 30.60	tr_ave: 11.7
+0.23953767120838165
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5814.5	x: 29.50	tr_ave: 11.6
+0.25069379806518555
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5829.0	x: 27.31	tr_ave: 11.7
+0.2672834098339081
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 3296.7	x: 17.70	tr_ave: 10.6
+0.3191380202770233
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5783.8	x: 32.14	tr_ave: 11.6
+0.2473677396774292
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5800.7	x: 29.29	tr_ave: 11.6
+0.2613261938095093
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5167.8	x: 25.96	tr_ave: 11.3
+0.3294726312160492
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5714.9	x: 28.30	tr_ave: 11.4
+0.29588842391967773
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 3373.6	x: 18.35	tr_ave: 10.8
+0.27085453271865845
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5713.3	x: 29.34	tr_ave: 11.4
+0.2639370858669281
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 4999.0	x: 25.86	tr_ave: 11.4
+0.2602770924568176
+trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5832.4	x: 32.49	tr_ave: 11.7
+
+
+
+
+
+
+
+
+

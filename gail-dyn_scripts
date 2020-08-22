@@ -1,8 +1,8 @@
  python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
 --num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
 --num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
---gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_feat.pkl" \
---save-dir trained_models_Gdyn_laika_bullet_soft23gt_feat_0  --seed 50201 --gail-traj-num 199 --train_dyn 1 \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_0818.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_feat_tmp0820_2  --seed 50202 --gail-traj-num 199 --train_dyn 1 \
 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
 --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 \
 --gail_downsample_frequency 1 --gamma 0.95
@@ -236,10 +236,83 @@ trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 4999.0	x: 25.86	tr_ave:
 trained_models_Gdyn_laika_bullet_soft23gt_tmptmp/ppo	tr: 5832.4	x: 32.49	tr_ave: 11.7
 
 
+# 0819 14:15
+# multi-step init
+# slightly random laika init (no randomness in real data though)
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-steps 1500 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_0818_2.pkl" --save-dir trained_models_Gdyn_laika_bullet_soft23gt_0818_0  --seed 60000 --gail-traj-num 150 --train_dyn 1 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 --gail_downsample_frequency 1 --gamma 0.95
 
 
 
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+--load-dirtrained_models_Gdyn_laika_bullet_soft23gt_0818_0/ppo --render 1 --non-det 1 --train_dyn 1 \
+--behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0 \
+--load-dis 0 --seed 1099  --enlarge_act_range 1 --act_noise 0 --obs_noise 0
+
+
+# only using 2 samples per batch
+# (multiple both loss with 0.1, seems fine for adam)
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" --save-dir trained_models_Gdyn_laika_bullet_soft23gt_feat_tmp0820_3_all_smallgloss  --seed 50202 --gail-traj-num 199 --train_dyn 1 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 --gail_downsample_frequency 1 --gamma 0.95
+
+# only grad pen loss
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" --save-dir trained_models_Gdyn_laika_bullet_soft23gt_all_gradpen  --seed 50202 --gail-traj-num 199 --train_dyn 1 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 --gail_downsample_frequency 1 --gamma 0.95
+
+# normal loss, grad pen weight 1, normal batch size
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" --save-dir trained_models_Gdyn_laika_bullet_soft23gt_all_gradpen1  --seed 50202 --gail-traj-num 199 --train_dyn 1 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 --gail_downsample_frequency 1 --gamma 0.95
+# grad pen 1 does not seem to work...
+
+# normal gail
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 2000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-traj-path "./laika_23_normalfloor_n100.pkl" --save-dir trained_models_laika_bullet_15_gail_tmp --seed 30000 --gail-traj-num 99
+
+# normal gail few data batch
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --algo ppo --use-gae --log-interval 10 --num-steps 2000 --num-processes 2 --lr 3e-4 --entropy-coef 0 --value-loss-coef 0.5 --ppo-epoch 10 --num-mini-batch 32 --gamma 0.99 --gae-lambda 0.95 --num-env-steps 10000000 --use-linear-lr-decay --gail --gail-traj-path "./laika_23_normalfloor_n100.pkl" --save-dir trained_models_laika_bullet_15_gail_tmp_few --seed 30000 --gail-traj-num 99
 
 
 
+# since large batch seems not helpful...
+# max length 150
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 150 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 8 --num-env-steps 10000000 --use-linear-lr-decay --ppo-epoch 4 \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_1_few  --seed 50101 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.95 --gail-batch-size 8
+# not really working
 
+# max length 500
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_1_few2  --seed 50102 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 1 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.95 --gail-batch-size 4
+
+# max length 500 (old data)
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_split.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_1_few2  --seed 50102 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 1 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.95 --gail-batch-size 4
+
+
+# reward * 5
+# small batch size, no grad pen, max 200 grad updates
+
+
+# reward normalize
+# old gail
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_2.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_rew_rms  --seed 50200 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.95

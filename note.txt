@@ -344,7 +344,133 @@ Use longer window for dis input
 # need a new predict reward
 
 
+Use longer time window for D input
+
+Generate rollouts: append T-1 steps after each rollout (such that each episode at least T long & T+1 obs)
+Appended state/ action, some placeholder state/action like all zeros
+The D takes in (st, at, st+1,at+1,...st+T) as input
+During reward assignment, for each (st,at,st+1), that is not in the appended part, give a reward predicted by D (st, at, st+1,at+1,...st+T)
+This is in a way delayed reward
+Do not use the tuples in appended part for Generator PPO update
+Note, we cannot simply rollout G longer in step 1 since we cannot assign reward to the very last tuples
+Note, this seems better than padding states at beginning of each rollout, as this forces Generator to match later observations from the beginning.
+
+# convention for place-holder state: height=1, all else 0
+# convention for place-holder action: all 0
+
+# consts T (16, 0.32s)
+#
+
+# changes to expert collection:
+bugfix: need to change current final s+ to placeholder state (sN-1, aN-1, sA) (length-N)
+append placeholder states (a,s) for T(?) times to each traj
+The last D input (sN-1, aN-1, sA, aA, ..., )        (a N+T times, s N+T times, s+ no longer needed actually)
+
+# changes to expert loader:
+They are already in features when loaded
+for i=0:N-1:
+    (no s here, since I do not need G to be correct each step)
+    construct (s_i, a_i, a_i+4, a_i+8, a_i+12, s_i+16) (max s_N+15 (N+T-1))
+
+# changes to policy loader (storage):
+Need a new ff-generator:
+After insert, go through all the stored (s,a, masks) to create D input for each
+for i=0:n_steps(1000):
+    obs is (s,a)
+
+# changes to D update
+no need to split policy state and policy action now
+
+
+Seems like need a function
+input:
+    array of s, array of a, t, steps_until_terminate
+output:
+    st, at, at+4, ..., st+16
+
+
+expert loader:
+sut = len(traj) - t
+
+policy loader:
+add an array (num_steps, num_processes, 1) storing sut of each (s,a,r)
+during insert,
+
+How to handle half-traj at the end of each PPO interaction batch?
+- rollout sim for additional 16 steps...
 
 
 
 
+
+When calling batchSampler, only sample from the non-appended part
+
+Problem with return calc/GAE?
+
+
+1. Appending T steps to each expert traj or policy traj(upon reach done)
+    if last done to num_steps < T, only append <T steps until num_steps
+    the last T steps are also treated as appended (it is likely that all the T steps are normal steps)
+    keep track of an array of real_state mask containing non-appended steps
+(Need a function appending k placeholder steps (return array s, a (together obs)), which should be easy)
+
+
+
+
+Use longer time window for D input (simpler version)
+
+const look back window length T=8
+
+1. no change of data - maybe fix the terminal state of expert/policy to place-holder
+2. D takes in (st-8, at-8, at-4, at, st+1) as input
+    expert loader:
+        for each traj,
+        once get all the (st, at, st+1), iterate from 9-th tuple to construct a new dataset
+    policy loader:
+        # TODO: no final obs for each traj, that reward value masked out as well
+        # TODO: maybe add one step to each rollout...
+        * A=torch.rand((2,3,2))
+        * A.permute(1,0,2).reshape(-1,2) non-continuous layout
+        maintain a matrix (num_steps, num_processes, 1) indicating the step idx of each tuple (s,a,r)
+        get a binary matrix of the above indicating if each tuple has st-8 or not
+        fill in (st-8, at-8, at-4) for every (st, at)
+            starting from 8-th step, 0~7 all zeros (later trajs will be non-sense at the beginning)
+            need new storage self.past_info, storage class take behavior_a_dim as input
+        only sample from the idx with 1's
+    overwriting rewards
+        0 reward for 0~7 of each traj (i.e. *binary matrix)
+    update policy ppo, unchanged.
+
+
+Need a function takes in tensor matrix st (N+1) at (N) masks (N+1, offset from 1?),
+
+first reshape to sequential order (2D)
+
+
+# resetted obs align with done_mask 0 (step+1)
+# which should align with rollout_step = 0
+
+
+# TODO: retrain everything with movable base
+
+# TODO: soft error should at least be temporal enxtended
+
+# TODO: think of DeepMimic initialization
+
+# try GAN? (multi-step)
+# try torque limit envs.
+
+# Does policy batch even matters??
+expert 128, policy 1??
+then what about expert 1, policy 1 (downsample 128)
+
+this is not only downsample then, but also using tiny batch size to update
+
+
+# why behavior always to one side??
+
+
+# difference between adaptive alive bonus and adaptive final reward
+
+
+# TODO: Clip weights of discriminator

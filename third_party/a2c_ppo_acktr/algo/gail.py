@@ -98,10 +98,13 @@ class Discriminator(nn.Module):
                 cur_obs_feat_a = torch.cat((cur_obs_feat_batch, cur_obs_a_batch), 1)
                 policy_state, policy_action = cur_obs_feat_a, policy_batch[-1]
 
+            # policy_state, policy_action = policy_state[:2], policy_action[:2]
+
             policy_d = self.trunk(
                 torch.cat([policy_state, policy_action], dim=1))
 
             expert_state, expert_action = expert_batch
+            # expert_state, expert_action = expert_state[:2], expert_action[:2]
             if obsfilt is not None:
                 expert_state = obsfilt(expert_state.cpu().numpy(), update=False)
                 expert_state = torch.FloatTensor(expert_state).to(self.device)
@@ -124,6 +127,9 @@ class Discriminator(nn.Module):
             expert_loss_t += expert_loss.item()
             policy_loss_t += policy_loss.item()
             n += 1
+
+            # if n > 200:
+            #     break
 
             self.optimizer.zero_grad()
             (gail_loss + grad_pen).backward()

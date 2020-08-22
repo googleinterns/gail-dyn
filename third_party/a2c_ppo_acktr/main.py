@@ -92,6 +92,8 @@ def main():
         # actor_critic.reset_variance(envs.action_space)
         # actor_critic.to(device)
 
+    # actor_critic, _ = torch.load("/home/yifengj/tmp/bullet-dart/trained_models_Gdyn_laika_bullet_soft23gt_1_few2/ppo/LaikagoConFEnv-v1.pt")
+
     dummy = gym.make(args.env_name, render=False, **extra_dict)
     save_path = os.path.join(args.save_dir, args.algo)
     print("SAVE PATH:")
@@ -113,8 +115,8 @@ def main():
     dummy.reset()
     try:
         # TODO: hopper
-        feat_select_func = dummy.robot.feature_selection_laika
-        # feat_select_func = dummy.robot.feature_selection_all_laika
+        # feat_select_func = dummy.robot.feature_selection_laika
+        feat_select_func = dummy.robot.feature_selection_all_laika
     except:
         feat_select_func = None
 
@@ -180,6 +182,8 @@ def main():
             discr = gail.Discriminator(
                 s_dim + a_dim, args.gail_dis_hdim,
                 device)
+
+            # discr = torch.load("/home/yifengj/tmp/bullet-dart/trained_models_Gdyn_laika_bullet_soft23gt_1_few2/ppo/LaikagoConFEnv-v1_D.pt")
         else:
             # learning dyn gail
             discr = gail.Discriminator(
@@ -223,6 +227,10 @@ def main():
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
+
+    from third_party.a2c_ppo_acktr.baselines.common.running_mean_std import RunningMeanStd
+    ret_rms = RunningMeanStd(shape=())
+
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -289,6 +297,15 @@ def main():
                     rollouts.rewards[step], returns = discr.predict_reward(
                         cur_obs_feat_a, rollouts.obs_feat[step + 1], args.gamma,
                         rollouts.masks[step])
+
+                    # redo reward normalize after overwriting
+                    # print(rollouts.rewards[step], returns)
+                    ret_rms.update(returns.view(-1).cpu().numpy())
+                    rews = rollouts.rewards[step].view(-1).cpu().numpy()
+                    rews = np.clip(rews / np.sqrt(ret_rms.var + 1e-7),
+                                   -10.0, 10.0)
+                    rollouts.rewards[step] = Tensor(rews).view(-1,1)
+                    # print("after", rollouts.rewards[step], returns)
 
             # final returns
             # print(returns)

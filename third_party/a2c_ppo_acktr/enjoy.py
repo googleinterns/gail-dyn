@@ -169,8 +169,8 @@ env = make_vec_envs(
 env_core = env.venv.venv.envs[0].env.env
 
 try:
-    # feat_select_func = env_core.robot.feature_selection_all_laika
-    feat_select_func = env_core.robot.feature_selection_laika
+    feat_select_func = env_core.robot.feature_selection_all_laika
+    # feat_select_func = env_core.robot.feature_selection_laika
 except:
     feat_select_func = None
 
@@ -340,6 +340,7 @@ with open(args.save_path, "wb") as handle:
 #     pickled = pickle.dumps(all_trajs)
 #     optimized_pickle = pickletools.optimize(pickled)
 #     f.write(optimized_pickle)
+# f.close()
 
 # with open("old_hopper_r", "wb") as handle:
 #     print(list_rewards)

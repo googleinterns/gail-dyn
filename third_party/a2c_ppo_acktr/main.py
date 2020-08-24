@@ -284,6 +284,19 @@ def main():
                                                                    utils.get_vec_normalize(envs)._obfilt,
                                                                    args.gail_dyn, a_dim)    # TODO
 
+            num_of_dones = (1.0 - rollouts.masks).sum().cpu().numpy() \
+                           + args.num_processes / 2
+            # print(num_of_dones)
+            # TODO: hardcoded tar episode length 100
+            num_of_expert_dones = (args.num_steps * args.num_processes) / 100.0
+            # print(num_of_expert_dones)
+
+            # d_sa < 0.5 if pi too short (too many pi dones),
+            # d_sa > 0.5 if pi too long
+            d_sa = 1 - num_of_dones / (num_of_dones + num_of_expert_dones)
+            # print(d_sa)
+            r_sa = np.log(d_sa) - np.log(1 - d_sa)        # d->1, r->inf
+
             # overwriting rewards by gail
             if not args.gail_dyn:
                 for step in range(args.num_steps):
@@ -296,7 +309,7 @@ def main():
                     cur_obs_feat_a = torch.cat((rollouts.obs_feat[step], cur_obs_a), 1)
                     rollouts.rewards[step], returns = discr.predict_reward(
                         cur_obs_feat_a, rollouts.obs_feat[step + 1], args.gamma,
-                        rollouts.masks[step])
+                        rollouts.masks[step], offset=-r_sa)
 
                     # redo reward normalize after overwriting
                     # print(rollouts.rewards[step], returns)
@@ -304,6 +317,7 @@ def main():
                     rews = rollouts.rewards[step].view(-1).cpu().numpy()
                     rews = np.clip(rews / np.sqrt(ret_rms.var + 1e-7),
                                    -10.0, 10.0)
+                    # print(ret_rms.var)    # just one number
                     rollouts.rewards[step] = Tensor(rews).view(-1,1)
                     # print("after", rollouts.rewards[step], returns)
 

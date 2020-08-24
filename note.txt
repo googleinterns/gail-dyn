@@ -474,3 +474,6 @@ this is not only downsample then, but also using tiny batch size to update
 
 
 # TODO: Clip weights of discriminator
+
+
+# TODO: GAE lambda higher might be better for sparse reward

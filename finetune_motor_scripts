@@ -13,3 +13,67 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --save-i
  --load-dir trained_models_laika_bullet_23_soft_GailDyn_gt_tmptmp/ppo  --render 1  --non-det 0  --load-dis 0 \
  --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --soft_floor_env 1  --save-traj 0 \
  --src-env-name "LaikagoConFEnv-v1"
+
+
+08-22 9:51
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --save-interval 2 --log-interval 2 \
+--num-steps 2000 --num-processes 4 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_soft23gt_rew_rms/ppo \
+  --save-dir trained_models_laika_bullet_23_soft_GailDyn_gt_rew_rms --seed 51400  \
+  --warm-start "./trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt" \
+  --act_noise 0 --obs_noise 0 --enlarge_act_range 0
+
+
+ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  \
+ --load-dir trained_models_laika_bullet_23_soft_GailDyn_gt_rew_rms/ppo  --render 1  --non-det 0  --load-dis 0 \
+ --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --soft_floor_env 1  --save-traj 0 \
+ --src-env-name "LaikagoConFEnv-v1"
+
+
+ 08-24 09:41
+ # low power init
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v1" --save-interval 2 --log-interval 2 \
+--num-steps 2000 --num-processes 4 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_low23gt_rew_rms_ab_airl/ppo \
+--save-dir trained_models_laika_bullet_23_low_GailDyn_gt_rew_rms_ab_airl --seed 51500  \
+--warm-start "./trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 200
+
+# test around iter last iter...
+ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  \
+ --load-dir trained_models_laika_bullet_23_low_GailDyn_gt_rew_rms_ab_airl/ppo  --render 1  --non-det 0  --load-dis 0 \
+ --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --low-power-env 1  --save-traj 0 \
+ --src-env-name "LaikagoActFEnv-v1"
+
+ # PPO finetune baseline
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --save-interval 1 --log-interval 1 \
+--num-steps 1000 --num-processes 2 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 10 \
+--num-mini-batch 8 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.2 \
+  --save-dir trained_models_laika_bullet_23_finetune_low --seed 51013 \
+  --warm-start "./trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt" \
+  --act_noise 0 --obs_noise 0 --low-power-env 1
+
+# or. lr 2.5
+
+# PPO finetune testing
+ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  \
+ --load-dir trained_models_laika_bullet_23_finetune_low /ppo  --render 1  --non-det 0  --load-dis 0 \
+ --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --low-power-env 1  --iter 11
+
+
+08-24 14:02
+# try conf
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --save-interval 2 --log-interval 2 \
+--num-steps 2000 --num-processes 4 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_soft23gt_ab_airl/ppo \
+--save-dir trained_models_laika_bullet_23_soft_GailDyn_gt_ab_airl --seed 51600  \
+--warm-start "./trained_models_laika_bullet_23/ppo/LaikagoBulletEnv-v1.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0
+
+ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  \
+ --load-dirtrained_models_laika_bullet_23_soft_GailDyn_gt_ab_airl/ppo  --render 1  --non-det 0  --load-dis 0 \
+ --seed 109 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --soft_floor_env 1  --save-traj 0 \
+ --src-env-name "LaikagoConFEnv-v1"

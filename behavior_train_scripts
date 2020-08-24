@@ -22,3 +22,16 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --lo
  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 6000000 --use-linear-lr-decay  \
   --clip-param 0.2 --save-dir trained_models_laika_bullet_30 --seed 20030 --act_noise 1 --obs_noise 1   \
   --dq_pen_weight 0.02
+
+
+
+08-23 23:45
+# try low power gap
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --load-dir trained_models_laika_bullet_23/ppo \
+--render 1  --non-det 0  --load-dis 0 --seed 1099 --enlarge_act_range 0 --act_noise 0 --obs_noise 0 --low_power_env 1
+
+# collect behavior data
+# low power gap
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --load-dir trained_models_laika_bullet_23/ppo  \
+--render 0  --non-det 1  --load-dis 0 --seed 109 --enlarge_act_range 1 --act_noise 0 --obs_noise 0 --low_power_env 1 \
+ --save-traj 1 --save-path "./laika_23_lowpower_n200.pkl"

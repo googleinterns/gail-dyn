@@ -134,14 +134,19 @@ class Discriminator(nn.Module):
             self.optimizer.zero_grad()
             (gail_loss + grad_pen).backward()
             self.optimizer.step()
+            #
+            # # TODO: Clip weights of discriminator
+            # for p in self.trunk.parameters():
+            #     p.data.clamp_(-0.1, 0.1)
+
         return loss / n, expert_loss_t / n, policy_loss_t / n
 
-    def predict_reward(self, state, action, gamma, masks):
+    def predict_reward(self, state, action, gamma, masks, offset=0.0):
         with torch.no_grad():
             self.eval()
             d = self.trunk(torch.cat([state, action], dim=1))
             s = torch.sigmoid(d)
-            reward = -(1 - s + 1e-7).log()  # avoid exploding, should not matter TODO-0.65
+            reward = (s + 1e-7).log() - (1 - s + 1e-7).log() + offset  # avoid exploding, should not matter TODO-0.65
             if self.returns is None:
                 self.returns = reward.clone()
             else:

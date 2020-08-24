@@ -47,6 +47,7 @@ class LaikagoBulletEnv(gym.Env):
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
+                 low_power_env=False,
                  randomization_train=False,
                  randomforce_train=False
                  ):
@@ -67,6 +68,7 @@ class LaikagoBulletEnv(gym.Env):
         self.vel_r_weight = vel_r_weight
 
         self.soft_floor_env = soft_floor_env
+        self.low_power_env = low_power_env
         self.randomization_train = randomization_train
         self.randomforce_train = randomforce_train
 
@@ -131,6 +133,10 @@ class LaikagoBulletEnv(gym.Env):
             # for ind in range(16):
             for ind in self.robot.feet:
                 self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
+
+        if self.low_power_env:
+            # TODO: for pi23
+            self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
             damp = np.random.uniform(150.0, 1000.0)

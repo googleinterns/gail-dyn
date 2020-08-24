@@ -89,10 +89,14 @@ class LaikagoBullet:
             bullet_client
     ):
         self._p = bullet_client
+
+        base_init_pos = utils.perturb(self.base_init_pos, 0.03)
+        base_init_euler = utils.perturb(self.base_init_euler, 0.1)
+
         self.go_id = self._p.loadURDF(os.path.join(currentdir,
                                                    "assets/laikago/laikago_toes_limits.urdf"),
-                                      list(self.base_init_pos-[0.043794, 0.0, 0.03]),
-                                      list(self._p.getQuaternionFromEuler(list(self.base_init_euler))),
+                                      list(base_init_pos-[0.043794, 0.0, 0.03]),
+                                      list(self._p.getQuaternionFromEuler(list(base_init_euler))),
                                       flags=self._p.URDF_USE_SELF_COLLISION,
                                       useFixedBase=0)
         # self.go_id = self._p.loadURDF(os.path.join(currentdir,
@@ -146,10 +150,13 @@ class LaikagoBullet:
     ):
         self._p = bullet_client
 
+        base_init_pos = utils.perturb(self.base_init_pos, 0.03)
+        base_init_euler = utils.perturb(self.base_init_euler, 0.1)
+
         self._p.resetBaseVelocity(self.go_id, [0., 0, 0], [0., 0, 0])
         self._p.resetBasePositionAndOrientation(self.go_id,
-                                                list(self.base_init_pos),
-                                                list(self._p.getQuaternionFromEuler(list(self.base_init_euler)))
+                                                list(base_init_pos),
+                                                list(self._p.getQuaternionFromEuler(list(base_init_euler)))
                                                 )
 
         self.reset_joints(self.init_q, np.array([0.0] * len(self.ctrl_dofs)))

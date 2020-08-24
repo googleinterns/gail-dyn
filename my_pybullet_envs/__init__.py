@@ -20,6 +20,7 @@ from .laikago_env import LaikagoBulletEnv
 from .laikago_env_ori import LaikagoBulletEnvOri
 from .hopper_env_conf_policy import HopperConFEnv
 from .laikago_env_conf_policy import LaikagoConFEnv
+from .laikago_env_actf_policy import LaikagoActFEnv
 # from .laikago_env_conf_reverse_env import LaikagoConFEnvRev
 # from .laikago_env_conf_debug_simple import LaikagoConFEnvDebug
 
@@ -66,6 +67,12 @@ register(
 register(
     id="LaikagoConFEnv-v1",
     entry_point="my_pybullet_envs:LaikagoConFEnv",
+    max_episode_steps=500,
+)
+
+register(
+    id="LaikagoActFEnv-v1",
+    entry_point="my_pybullet_envs:LaikagoActFEnv",
     max_episode_steps=500,
 )
 

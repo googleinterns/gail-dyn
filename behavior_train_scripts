@@ -35,3 +35,45 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --lo
 python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --load-dir trained_models_laika_bullet_23/ppo  \
 --render 0  --non-det 1  --load-dis 0 --seed 109 --enlarge_act_range 1 --act_noise 0 --obs_noise 0 --low_power_env 1 \
  --save-traj 1 --save-path "./laika_23_lowpower_n200.pkl"
+
+08-24 15:05
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 6000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_32 --seed 20032 --act_noise 1 --obs_noise 1   \
+  --max_tar_vel 2.5  --energy_weight 0.1 --ab 8.0 --q_pen_weight 0.5  --dq_pen_weight 0.03 --no-dq 1
+
+
+08-24 16:53
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 6000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_33 --seed 20033 --act_noise 1 --obs_noise 1   \
+  --max_tar_vel 2.5  --energy_weight 0.1 --q_pen_weight 0.5  --dq_pen_weight 0.02 --no-dq 1
+
+08-24 20:27
+ab - 3.0
+dq_pen_weight 0.025
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 6000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_34 --seed 20034 --act_noise 1 --obs_noise 1   \
+  --max_tar_vel 2.5  --energy_weight 0.1 --q_pen_weight 0.5  --dq_pen_weight 0.025 --no-dq 1
+
+08-24 22:30
+# dq,q l2 loss, act l1 loss
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --num-steps 1200  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 8000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_35 --seed 20035 --act_noise 1 --obs_noise 1   \
+  --max_tar_vel 2.5  --energy_weight 0.25 --q_pen_weight 1.0  --dq_pen_weight 0.03 --no-dq 1
+08-25 00:01
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_36 --seed 20036 --act_noise 1 --obs_noise 1   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03 --no-dq 1
+
+
+08-24 20:46
+# collect behavior data (feat with q)
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --load-dir trained_models_laika_bullet_23/ppo  \
+--render 0  --non-det 1  --load-dis 0 --seed 109 --enlarge_act_range 1 --act_noise 0 --obs_noise 0 --soft_floor_env 1 \
+ --save-traj 1 --save-path "./laika_23_softfloor_n200_feat_wq.pkl"
+
+

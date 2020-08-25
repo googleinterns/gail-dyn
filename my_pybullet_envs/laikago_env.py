@@ -200,7 +200,7 @@ class LaikagoBulletEnv(gym.Env):
 
         reward += np.maximum((self.max_tar_vel - tar) * self.vel_r_weight - 3.0, 0.0)     # alive bonus
 
-        reward += -self.energy_weight * np.square(a).sum()
+        reward += -self.energy_weight * np.linalg.norm(a, ord=1)
         # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
@@ -211,8 +211,8 @@ class LaikagoBulletEnv(gym.Env):
         reward += -self.jl_weight * joints_at_limit
         # print("jl", -self.jl_weight * joints_at_limit)
 
-        reward += -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0)
-        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)
+        reward += -np.minimum(np.linalg.norm(dq) * self.dq_pen_weight, 5.0)
+        reward += -np.minimum(np.linalg.norm(q - self.robot.init_q) * self.q_pen_weight, 5.0)
         # print("vel pen", -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0))
         # print("pos pen", -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0))
 

@@ -193,10 +193,13 @@ class LaikagoBulletEnv(gym.Env):
         x_1 = root_pos[0]
         self.velx = (x_1 - x_0) / (self.control_skip * self._ts)
 
-        reward = self.ab  # alive bonus
+        reward = 0.0
         tar = np.minimum(self.timer / 500, self.max_tar_vel)
         reward += np.minimum(self.velx, tar) * self.vel_r_weight
         # print("v", self.velx, "tar", tar)
+
+        reward += np.maximum((self.max_tar_vel - tar) * self.vel_r_weight - 3.0, 0.0)     # alive bonus
+
         reward += -self.energy_weight * np.square(a).sum()
         # print("act norm", -self.energy_weight * np.square(a).sum())
 
@@ -236,10 +239,13 @@ class LaikagoBulletEnv(gym.Env):
         #         body_floor = True
         #         break
 
+        cps = self._p.getContactPoints(bodyA=self.robot.go_id, linkIndexA=0)
+        body_in_contact = (len(cps) > 0)
+
         # print("------")
         obs = self.get_extended_observation()
         rpy = self._p.getEulerFromQuaternion(obs[8:12])
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support and not body_in_contact
         # not_done = True
 
         return obs, reward, not not_done, {}
@@ -279,7 +285,7 @@ class LaikagoBulletEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 5
+        distance = 4
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])

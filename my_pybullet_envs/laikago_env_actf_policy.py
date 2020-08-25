@@ -124,6 +124,7 @@ class LaikagoActFEnv(gym.Env):
         self.obs = []
         self.behavior_obs_len = None
         self.behavior_act_len = None
+        self.init_state = None
         self.reset()  # and update init obs
         #
         # self.d_scores = []
@@ -149,6 +150,8 @@ class LaikagoActFEnv(gym.Env):
 
         if self.reset_counter < 50:
             self.reset_counter += 1
+
+            self._p.restoreState(self.init_state)
             self.robot.soft_reset(self._p)
         else:
             self.reset_counter = 0
@@ -162,11 +165,14 @@ class LaikagoActFEnv(gym.Env):
             _ = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
 
             self.robot.reset(self._p)
+            self.init_state = self._p.saveState()
 
         self._p.stepSimulation()
         self.timer = 0
         # self.d_scores = []
         self.update_extended_observation()
+
+        self.ratios = np.array([[]]).reshape(0,12)
 
         return self.obs
 
@@ -256,6 +262,8 @@ class LaikagoActFEnv(gym.Env):
                     env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
                 )
             env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
+
+            self.ratios = np.append(self.ratios, [env_action / robo_action], axis=0)
             #
             # env_pi_obs_feat = self.feat_select_func(self.obs)
             # dis_state = np.concatenate((env_pi_obs_feat, robo_action))
@@ -344,9 +352,13 @@ class LaikagoActFEnv(gym.Env):
         #         break
 
         # print("------")
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
+        #
+        # if not not_done:
+        #     print(self.ratios.shape)
+        #     print(np.mean(self.ratios, axis=0))
 
         # if not self.train_dyn:
         #     dis_action = self.feat_select_func(self.obs)

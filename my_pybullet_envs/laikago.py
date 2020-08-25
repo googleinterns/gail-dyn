@@ -342,6 +342,24 @@ class LaikagoBullet:
 
         return feature
 
+    def feature_selection_withq_laika(self, full_obs):
+        # TODO: the vel part obs is scaled
+        # TODO should further utilize symmetry
+        # hard coded indices
+        feature = []
+        # root lin vel
+        feature.extend(full_obs[:3])
+        # root height
+        feature.extend([full_obs[7]])
+        # root rpy matrix
+        feature.extend(pybullet.getMatrixFromQuaternion(full_obs[8:12]))
+        # TODO: add contact loc?
+        # q
+        q = np.array(full_obs[24:36])
+        feature.extend(q)
+
+        return feature
+
     def feature_selection_all_laika(self, full_obs):
         feature = list(full_obs[:52])
         return feature

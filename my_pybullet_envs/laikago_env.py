@@ -89,6 +89,7 @@ class LaikagoBulletEnv(gym.Env):
         self.floor_id = None
 
         self.reset_counter = 50  # do a hard reset first
+        self.init_state = None
         obs = self.reset()  # and update init obs
 
         self.action_dim = len(self.robot.ctrl_dofs)
@@ -103,6 +104,8 @@ class LaikagoBulletEnv(gym.Env):
 
         if self.reset_counter < 50:
             self.reset_counter += 1
+
+            self._p.restoreState(self.init_state)
             self.robot.soft_reset(self._p)
         else:
             self.reset_counter = 0
@@ -116,6 +119,7 @@ class LaikagoBulletEnv(gym.Env):
             self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
 
             self.robot.reset(self._p)
+            self.init_state = self._p.saveState()
 
             # self._p.changeDynamics(self.floor_id, -1, contactDamping=150.0, contactStiffness=400.0)
             # for ind in self.robot.feet:
@@ -126,7 +130,7 @@ class LaikagoBulletEnv(gym.Env):
             # TODO: for pi23
             damp = np.random.uniform(50.0, 75.0)
             stiff = np.random.uniform(75.0, 150.0)
-            # # TODO: for pi12
+            # # TODO: for pi12, 36
             # damp = 150.0
             # stiff = 400.0
             self._p.changeDynamics(self.floor_id, -1, contactDamping=damp, contactStiffness=stiff)
@@ -134,9 +138,9 @@ class LaikagoBulletEnv(gym.Env):
             for ind in self.robot.feet:
                 self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
-        if self.low_power_env:
-            # TODO: for pi23
-            self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
+        # if self.low_power_env:
+        #     # TODO: for pi23
+        #     self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
             damp = np.random.uniform(150.0, 1000.0)
@@ -163,6 +167,17 @@ class LaikagoBulletEnv(gym.Env):
         a = np.clip(a, -1.0, 1.0)
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
+
+        if self.low_power_env:
+            # TODO: for pi23
+            _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+            max_force_ratio = np.clip(2 - dq/3.0, 0, 1)
+            # print(max_force_ratio)
+            # self.robot.max_forces[3:6] = [30., 30, 30] * max_force_ratio[3:6]
+            # self.robot.max_forces[6:9] = [30., 30, 30] * max_force_ratio[6:9]
+            # self.robot.max_forces = ([30., 30, 30]*4) * max_force_ratio
+            a *= max_force_ratio
+            # a[3:6] *= 0.5
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -200,7 +215,7 @@ class LaikagoBulletEnv(gym.Env):
 
         reward += np.maximum((self.max_tar_vel - tar) * self.vel_r_weight - 3.0, 0.0)     # alive bonus
 
-        reward += -self.energy_weight * np.linalg.norm(a, ord=1)
+        reward += -self.energy_weight * np.linalg.norm(a)
         # print("act norm", -self.energy_weight * np.square(a).sum())
 
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
@@ -245,7 +260,11 @@ class LaikagoBulletEnv(gym.Env):
         # print("------")
         obs = self.get_extended_observation()
         rpy = self._p.getEulerFromQuaternion(obs[8:12])
+
+        # for training
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support and not body_in_contact
+        # for data collection
+        # not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and not body_in_contact
         # not_done = True
 
         return obs, reward, not not_done, {}

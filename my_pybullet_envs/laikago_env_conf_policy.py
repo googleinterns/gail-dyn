@@ -127,6 +127,7 @@ class LaikagoConFEnv(gym.Env):
         self.obs = []
         self.behavior_obs_len = None
         self.behavior_act_len = None
+        self.init_state = None
         self.reset()  # and update init obs
         #
         # self.d_scores = []
@@ -152,6 +153,8 @@ class LaikagoConFEnv(gym.Env):
 
         if self.reset_counter < 50:
             self.reset_counter += 1
+
+            self._p.restoreState(self.init_state)
             self.robot.soft_reset(self._p)
         else:
             self.reset_counter = 0
@@ -168,6 +171,7 @@ class LaikagoConFEnv(gym.Env):
                 self._p.setCollisionFilterGroupMask(floor_id, -1, 0, 0)
 
             self.robot.reset(self._p)
+            self.init_state = self._p.saveState()
 
             # should be after reset!
             if self.soft_floor_env:
@@ -367,7 +371,7 @@ class LaikagoConFEnv(gym.Env):
         #         break
 
         # print("------")
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
 

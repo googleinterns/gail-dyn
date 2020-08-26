@@ -1268,3 +1268,126 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-st
 
 
 08-15 12:30 early terminate fine-tune when D score small
+
+
+# re-organize the pipeline a bit
+# behavior policy should not take y as input (keep z for now)
+# behavior use rotation matrix rather than quat
+# behavior policy does not use dq, but dynamics model uses dq.
+    need a flag during func call
+# so both behavior & Dis now takes in:
+    root z, root rot mat, root lin vel, q, feet relative loc, (Gen takes additional root angv & dq)
+    & (last) normal force (outside)
+# add init noise to base vel as well (base 6d, q, dq already have that)
+
+# TODO: maybe behavior and D do not need z anyways...
+
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_38 --seed 20038 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.6  --dq_pen_weight 0.03
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_39 --seed 20039 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
+
+# decrase last pi layer and log std
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_40 --seed 20040 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_41 --seed 20041 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 4
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1000  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_42 --seed 20042 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.2 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 3
+
+# back to old reward...
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_43 --seed 20043 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.5  --dq_pen_weight 0.01
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+--lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+--clip-param 0.2 --save-dir trained_models_laika_bullet_44 --seed 20044 --act_noise 0 --obs_noise 0  \
+--max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
+
+# try adding entropy; without init scheme
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+--lr 3e-4 --entropy-coef 0.01 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+--clip-param 0.2 --save-dir trained_models_laika_bullet_44_2 --seed 200442 --act_noise 0 --obs_noise 0  \
+--max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
+
+# weighted q pen
+# squared dq pen
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_43 --seed 20043 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+
+# try again
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_45 --seed 20045 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+# failed
+
+# try again
+# act/obs noise
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_46 --seed 20046 --act_noise 1 --obs_noise 1  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+
+# try again
+# act/obs noise
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_47 --seed 20047 --act_noise 1 --obs_noise 1  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+
+
+# TODO: will fine-tune fail?
+*****ave 10 steps
+
+# collect behavior data and gail training
+
+(# the only tricky part is that now we have contact force in obs
+# maybe this is okay)
+# how is feat_select_func used? In main and enjoy
+# in enjoy, transform from B obs to D obs
+# in main, transform from G obs (with behavior act) to D obs
+# add two separate functions
+
+# now use feat_select_func in env for G2B as well
+
+# enlarge act scale to 0.5(0.25)
+# the easy act net gap for pi43
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v2"  --load-dir trained_models_laika_bullet_43/ppo \
+--render 0  --non-det 1  --load-dis 0 --seed 1099 --enlarge_act_range 0.25 --act_noise 0 --obs_noise 0 \
+--soft_floor_env 0 --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001 \
+--low-power-env 1 --save-traj 1 --save-path "./laika_43_lowpower_n200.pkl"
+
+
+# gail-dyn, easy act gap
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_43_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low43gt --seed 50501 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_43/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v2" --hidden_size 100  --enlarge_act_range 0.25 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99
+
+
+
+
+

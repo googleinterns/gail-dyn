@@ -113,12 +113,17 @@ def main():
     # input("source file stored press enter")
 
     dummy.reset()
-    try:
-        # TODO: hopper
-        # feat_select_func = dummy.robot.feature_selection_laika
-        feat_select_func = dummy.robot.feature_selection_all_laika
-    except:
-        feat_select_func = None
+    feat_select_func = None
+    if args.gail_dyn:
+        try:
+            # TODO: hopper
+            # feat_select_func = dummy.robot.feature_selection_laika
+            # feat_select_func = dummy.robot.feature_selection_all_laika
+            # feat_select_func = dummy.robot.feature_selection_withq_laika
+            feat_select_func = dummy.robot.feature_selection_G2BD_laika_v2
+        except:
+            print("feat select not found")
+            pass
 
     # dummy.close()
 

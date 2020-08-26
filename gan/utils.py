@@ -81,7 +81,7 @@ def load_gail_discriminator(policy_dir: str, env_name: str, is_cuda: bool, iter_
     return discri
 
 
-def wrap(obs: np.ndarray, is_cuda: bool) -> torch.Tensor:
+def wrap(obs, is_cuda: bool) -> torch.Tensor:
     obs = torch.Tensor([obs])
     if is_cuda:
         obs = obs.cuda()

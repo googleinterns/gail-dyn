@@ -119,8 +119,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--enlarge-act-range",
-    type=int,
-    default=1,
+    type=float,
+    default=0.15,
     help="add white noise to action during rollout",
 )
 parser.add_argument(
@@ -169,8 +169,10 @@ env = make_vec_envs(
 env_core = env.venv.venv.envs[0].env.env
 
 try:
-    feat_select_func = env_core.robot.feature_selection_all_laika
+    # feat_select_func = env_core.robot.feature_selection_all_laika
     # feat_select_func = env_core.robot.feature_selection_laika
+    # feat_select_func = env_core.robot.feature_selection_withq_laika
+    feat_select_func = env_core.robot.feature_selection_B2D_laika_v2
 except:
     feat_select_func = None
 
@@ -238,9 +240,10 @@ while True:
         value, action, _, recurrent_hidden_states = actor_critic.act(
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
-        if args.enlarge_act_range:                  # TODO, name duplicate
-            # 15% noise if a clipped to -1, 1
-            action += (torch.rand(action.size()).to(device) - 0.5) * 0.3
+
+        # TODO, name duplicate
+        # 25% noise if a clipped to -1, 1
+        action += (torch.rand(action.size()).to(device) - 0.5) * (args.enlarge_act_range * 2)
 
     if args.save_traj:
         tuple_sas = []

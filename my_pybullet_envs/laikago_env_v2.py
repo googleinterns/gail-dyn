@@ -40,8 +40,8 @@ class LaikagoBulletEnvV2(gym.Env):
                  energy_weight=0.1,
                  jl_weight=0.5,
                  ab=5.0,
-                 q_pen_weight=0.5,
-                 dq_pen_weight=0.02,
+                 q_pen_weight=0.4,
+                 dq_pen_weight=0.001,
                  vel_r_weight=4.0,
 
                  soft_floor_env=False,
@@ -118,21 +118,24 @@ class LaikagoBulletEnvV2(gym.Env):
             self.robot.reset(self._p)
             self.init_state = self._p.saveState()
 
-        # should be after reset!
-        if self.soft_floor_env:
-            # # TODO: for pi23
-            # damp = np.random.uniform(50.0, 75.0)
-            # stiff = np.random.uniform(75.0, 150.0)
-            # TODO: for pi12, 36
-            damp = 150.0
-            stiff = 400.0
-            self._p.changeDynamics(self.floor_id, -1, contactDamping=damp, contactStiffness=stiff)
-            for ind in self.robot.feet:
-                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
+        # # should be after reset!
+        # if self.soft_floor_env:
+        #     # # TODO: for pi23
+        #     # damp = np.random.uniform(50.0, 75.0)
+        #     # stiff = np.random.uniform(75.0, 150.0)
+        #     # TODO: for pi12, 36
+        #     damp = 100.0
+        #     stiff = 50.0
+        #     self._p.changeDynamics(self.floor_id, -1, contactDamping=damp, contactStiffness=stiff)
+        #     for ind in range(16):
+        #     # for ind in self.robot.feet:
+        #         self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
-        if self.low_power_env:
-            # TODO: for pi23
-            self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
+        # if self.low_power_env:
+        #     # # TODO: for pi44
+        #     # self.robot.max_forces = [30.0] * 3 + [20.0] * 3 + [30.0] * 6
+        #     # TODO: for pi43
+        #     self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
             damp = np.random.uniform(150.0, 1000.0)
@@ -168,15 +171,14 @@ class LaikagoBulletEnvV2(gym.Env):
             a = utils.perturb(a, 0.05, self.np_random)
 
         # if self.low_power_env:
-        #     # TODO: for pi23
+        #     # # TODO: for pi44
+        #     # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        #     # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
+        #     # a *= max_force_ratio
+        #     # TODO: for pi43
         #     _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        #     max_force_ratio = np.clip(2 - dq/3.0, 0, 1)
-        #     # print(max_force_ratio)
-        #     # self.robot.max_forces[3:6] = [30., 30, 30] * max_force_ratio[3:6]
-        #     # self.robot.max_forces[6:9] = [30., 30, 30] * max_force_ratio[6:9]
-        #     # self.robot.max_forces = ([30., 30, 30]*4) * max_force_ratio
+        #     max_force_ratio = np.clip(2 - dq/2., 0, 1)
         #     a *= max_force_ratio
-        #     # a[3:6] *= 0.5
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -236,8 +238,9 @@ class LaikagoBulletEnvV2(gym.Env):
         reward += -self.jl_weight * joints_at_limit
         # print("jl", -self.jl_weight * joints_at_limit)
 
-        reward += -np.minimum(np.sum(np.abs(dq)) * self.dq_pen_weight, 5.0)
-        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q)) * self.q_pen_weight, 5.0)
+        reward += -np.minimum(np.sum(np.square(dq)) * self.dq_pen_weight, 5.0)
+        weight = np.array([2.0, 1.0, 1.0] * 4)
+        reward += -np.minimum(np.sum(np.square(q - self.robot.init_q) * weight) * self.q_pen_weight, 5.0)
 
         # reward = self.ab
         # tar = np.minimum(self.timer / 500, self.max_tar_vel)
@@ -284,6 +287,7 @@ class LaikagoBulletEnvV2(gym.Env):
         # rpy = self._p.getEulerFromQuaternion(obs[8:12])
 
         # for data collection
+        # TODO
         not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and not body_in_contact and in_support
         # not_done = True
 

@@ -60,7 +60,7 @@ class LaikagoBullet:
 
         self.no_dq = no_dq
 
-        self.base_init_pos = np.array([0, 0, .5])  # starting position
+        self.base_init_pos = np.array([0, 0, .55])  # starting position
         self.base_init_euler = np.array([1.5708, 0, 1.5708])  # starting orientation
 
         self.feet = [3, 7, 11, 15]

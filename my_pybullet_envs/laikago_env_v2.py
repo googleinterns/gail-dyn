@@ -170,15 +170,15 @@ class LaikagoBulletEnvV2(gym.Env):
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
 
-        # if self.low_power_env:
-        #     # # TODO: for pi44
-        #     # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        #     # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
-        #     # a *= max_force_ratio
-        #     # TODO: for pi43
-        #     _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-        #     max_force_ratio = np.clip(2 - dq/2., 0, 1)
-        #     a *= max_force_ratio
+        if self.low_power_env:
+            # # TODO: for pi44
+            # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+            # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
+            # a *= max_force_ratio
+            # TODO: for pi43
+            _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+            max_force_ratio = np.clip(2 - dq/2., 0, 1)
+            a *= max_force_ratio
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -279,8 +279,8 @@ class LaikagoBulletEnvV2(gym.Env):
         # print("dq.", np.abs(dq))
         # print((np.abs(dq) < 50).all())
 
-        cps = self._p.getContactPoints(bodyA=self.robot.go_id, linkIndexA=0)
-        body_in_contact = (len(cps) > 0)
+        # cps = self._p.getContactPoints(bodyA=self.robot.go_id, linkIndexA=0)
+        # body_in_contact = (len(cps) > 0)
 
         # print("------")
         obs = self.get_extended_observation()
@@ -288,7 +288,7 @@ class LaikagoBulletEnvV2(gym.Env):
 
         # for data collection
         # TODO
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and not body_in_contact and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
         return obs, reward, not not_done, {}

@@ -1282,63 +1282,12 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-st
 
 # TODO: maybe behavior and D do not need z anyways...
 
-
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
-  --clip-param 0.2 --save-dir trained_models_laika_bullet_38 --seed 20038 --act_noise 0 --obs_noise 0   \
-  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.6  --dq_pen_weight 0.03
-
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
-  --clip-param 0.2 --save-dir trained_models_laika_bullet_39 --seed 20039 --act_noise 0 --obs_noise 0   \
-  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
-
-# decrase last pi layer and log std
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
-  --clip-param 0.2 --save-dir trained_models_laika_bullet_40 --seed 20040 --act_noise 0 --obs_noise 0   \
-  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
-
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
-  --clip-param 0.2 --save-dir trained_models_laika_bullet_41 --seed 20041 --act_noise 0 --obs_noise 0   \
-  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 4
-
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1000  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
-  --clip-param 0.2 --save-dir trained_models_laika_bullet_42 --seed 20042 --act_noise 0 --obs_noise 0   \
-  --max_tar_vel 2.5  --energy_weight 0.2 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 3
-
-# back to old reward...
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
- --clip-param 0.2 --save-dir trained_models_laika_bullet_43 --seed 20043 --act_noise 0 --obs_noise 0  \
- --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.5  --dq_pen_weight 0.01
-
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
---lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
---clip-param 0.2 --save-dir trained_models_laika_bullet_44 --seed 20044 --act_noise 0 --obs_noise 0  \
---max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
-
-# try adding entropy; without init scheme
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
---lr 3e-4 --entropy-coef 0.01 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
---clip-param 0.2 --save-dir trained_models_laika_bullet_44_2 --seed 200442 --act_noise 0 --obs_noise 0  \
---max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
-
 # weighted q pen
 # squared dq pen
 python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
  --clip-param 0.2 --save-dir trained_models_laika_bullet_43 --seed 20043 --act_noise 0 --obs_noise 0  \
  --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
-
-# try again
-python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
- --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
- --clip-param 0.2 --save-dir trained_models_laika_bullet_45 --seed 20045 --act_noise 0 --obs_noise 0  \
- --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
-# failed
 
 # try again
 # act/obs noise
@@ -1377,6 +1326,11 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v2"  --lo
 --low-power-env 1 --save-traj 1 --save-path "./laika_43_lowpower_n200.pkl"
 
 
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v2"  --load-dir trained_models_laika_bullet_43/ppo \
+--render 1  --non-det 1  --load-dis 0 --seed 1099 --enlarge_act_range 0.25 --act_noise 0 --obs_noise 0 \
+--soft_floor_env 0 --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001 \
+--low-power-env 1 --save-traj 0 --save-path "./laika_43_lowpower_n200.pkl"
+
 # gail-dyn, easy act gap
  python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" \
 --num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
@@ -1386,6 +1340,45 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v2"  --lo
 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_43/ppo" \
 --behavior_env_name "LaikagoBulletEnv-v2" --hidden_size 100  --enlarge_act_range 0.25 --cuda_env 1 \
 --gail_downsample_frequency 1 --gamma 0.99
+
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoActFEnv-v2" \
+   --load-dir trained_models_Gdyn_laika_bullet_low43gt/ppo --render 1 --non-det 1 --train_dyn 1 \
+      --behavior_dir trained_models_laika_bullet_43/ppo --behavior_env_name "LaikagoBulletEnv-v2" --save-traj 0   \
+        --load-dis 0 --seed 109  --enlarge_act_range 0.25 --act_noise 0 --obs_noise 0 --pretrain_dyn 0 --cuda-env 0 --iter 610
+
+# try finetune
+# self.logstd = AddBias(torch.ones(num_outputs) * -1)
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" --save-interval 5 --log-interval 5 \
+--num-steps 1000 --num-processes 8 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 --entropy-coef 0.00 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_low43gt/ppo \
+--save-dir trained_models_laika_bullet_43_low_FTGAIL --seed 51600  \
+--warm-start "./trained_models_laika_bullet_43/ppo/LaikagoBulletEnv-v2.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 610
+
+
+# gail-dyn, hard act gap
+# num_of_expert_dones = (args.num_steps * args.num_processes) / 200.0
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_43_lowpower_dq_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_lowdq43gt --seed 50601 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_43/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v2" --hidden_size 100  --enlarge_act_range 0.25 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99
+
+
+# try finetune
+# self.logstd = AddBias(torch.ones(num_outputs) * -1)
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" --save-interval 5 --log-interval 5 \
+--num-steps 1000 --num-processes 8 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 --entropy-coef 0.00 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_lowdq43gt/ppo \
+--save-dir trained_models_laika_bullet_43_lowdq_FTGAIL --seed 51700  \
+--warm-start "./trained_models_laika_bullet_43/ppo/LaikagoBulletEnv-v2.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 450
 
 
 

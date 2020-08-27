@@ -73,9 +73,9 @@ class Policy(nn.Module):
     def forward(self, inputs, rnn_hxs, masks):
         raise NotImplementedError
 
-    def reset_variance(self, action_space):
+    def reset_variance(self, action_space, log_std):
         num_outputs = action_space.shape[0]
-        self.dist.reset_variance(num_outputs)
+        self.dist.reset_variance(num_outputs, log_std)
 
     def act(self, inputs, rnn_hxs, masks, deterministic=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)

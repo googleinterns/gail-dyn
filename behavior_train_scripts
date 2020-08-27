@@ -106,3 +106,58 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v1"  --lo
  --save-traj 1 --save-path "./laika_23_lowpower_dq_n200.pkl"
 
 
+
+
+# new behavior policy disgard attempts(
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_38 --seed 20038 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.6  --dq_pen_weight 0.03
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_39 --seed 20039 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
+
+# decrase last pi layer and log std
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_40 --seed 20040 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.03
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_41 --seed 20041 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.3 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 4
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1000  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+  --clip-param 0.2 --save-dir trained_models_laika_bullet_42 --seed 20042 --act_noise 0 --obs_noise 0   \
+  --max_tar_vel 2.5  --energy_weight 0.2 --q_pen_weight 0.8  --dq_pen_weight 0.02 --ab 3
+
+# back to old reward...
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_43 --seed 20043 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.5  --dq_pen_weight 0.01
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+--lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+--clip-param 0.2 --save-dir trained_models_laika_bullet_44 --seed 20044 --act_noise 0 --obs_noise 0  \
+--max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
+
+# try adding entropy; without init scheme
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+--lr 3e-4 --entropy-coef 0.01 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+--clip-param 0.2 --save-dir trained_models_laika_bullet_44_2 --seed 200442 --act_noise 0 --obs_noise 0  \
+--max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.5  --dq_pen_weight 0.02
+
+ # try again
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v2" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_45 --seed 20045 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+# failed
+)
+
+

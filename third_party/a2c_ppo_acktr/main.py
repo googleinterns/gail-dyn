@@ -52,6 +52,7 @@ import my_pybullet_envs
 
 import logging
 import sys
+
 sys.path.append("third_party")
 
 
@@ -89,8 +90,10 @@ def main():
             actor_critic, _ = torch.load(args.warm_start)
         else:
             actor_critic, _ = torch.load(args.warm_start, map_location='cpu')
-        # actor_critic.reset_variance(envs.action_space)
-        # actor_critic.to(device)
+
+        if args.warm_start_logstd is not None:
+            actor_critic.reset_variance(envs.action_space, args.warm_start_logstd)
+            actor_critic.to(device)
 
     # actor_critic, _ = torch.load("/home/yifengj/tmp/bullet-dart/trained_models_Gdyn_laika_bullet_soft23gt_1_few2/ppo/LaikagoConFEnv-v1.pt")
 
@@ -214,13 +217,12 @@ def main():
 
     obs = envs.reset()
     obs_feat = gan_utils.replace_obs_with_feat(obs, args.cuda, feat_select_func, return_tensor=True)
-    feat_len = obs_feat.size(1)     # TODO: multi-dim obs broken
+    feat_len = obs_feat.size(1)  # TODO: multi-dim obs broken
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size,
                               feat_len)
-
 
     rollouts.obs[0].copy_(obs)
     rollouts.obs_feat[0].copy_(obs_feat)
@@ -287,20 +289,19 @@ def main():
             for _ in range(gail_epoch):
                 gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,
                                                                    utils.get_vec_normalize(envs)._obfilt,
-                                                                   args.gail_dyn, a_dim)    # TODO
+                                                                   args.gail_dyn, a_dim)  # TODO
 
             num_of_dones = (1.0 - rollouts.masks).sum().cpu().numpy() \
-                           + args.num_processes / 2
+                + args.num_processes / 2
             # print(num_of_dones)
-            # TODO: hardcoded tar episode length 100
-            num_of_expert_dones = (args.num_steps * args.num_processes) / 100.0
+            num_of_expert_dones = (args.num_steps * args.num_processes) / args.gail_tar_length
             # print(num_of_expert_dones)
 
             # d_sa < 0.5 if pi too short (too many pi dones),
             # d_sa > 0.5 if pi too long
             d_sa = 1 - num_of_dones / (num_of_dones + num_of_expert_dones)
             # print(d_sa)
-            r_sa = np.log(d_sa) - np.log(1 - d_sa)        # d->1, r->inf
+            r_sa = np.log(d_sa) - np.log(1 - d_sa)  # d->1, r->inf
 
             # overwriting rewards by gail
             if not args.gail_dyn:
@@ -323,7 +324,7 @@ def main():
                     rews = np.clip(rews / np.sqrt(ret_rms.var + 1e-7),
                                    -10.0, 10.0)
                     # print(ret_rms.var)    # just one number
-                    rollouts.rewards[step] = Tensor(rews).view(-1,1)
+                    rollouts.rewards[step] = Tensor(rews).view(-1, 1)
                     # print("after", rollouts.rewards[step], returns)
 
             # final returns
@@ -338,8 +339,7 @@ def main():
         rollouts.after_update()
 
         # save for every interval-th episode or for the last epoch
-        if (j % args.save_interval == 0
-            or j == num_updates - 1) and args.save_dir != "":
+        if (j % args.save_interval == 0 or j == num_updates - 1) and args.save_dir != "":
             torch.save([
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
@@ -361,14 +361,16 @@ def main():
                 ("Updates {}, num timesteps {}, FPS {} \n Last {} training episodes:" +
                  " mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, " +
                  "dist en {}, l_pi {}, l_vf {}, recent_gail_r {}," +
-                 "loss_gail {}, loss_gail_e {}, loss_gail_p {}\n")
-                    .format(j, total_num_steps,
-                            int(total_num_steps / (end - start)),
-                            len(episode_rewards), np.mean(episode_rewards),
-                            np.median(episode_rewards), np.min(episode_rewards),
-                            np.max(episode_rewards), dist_entropy, value_loss,
-                            action_loss, np.mean(gail_rewards),
-                            gail_loss, gail_loss_e, gail_loss_p))
+                 "loss_gail {}, loss_gail_e {}, loss_gail_p {}\n").format(
+                    j, total_num_steps,
+                    int(total_num_steps / (end - start)),
+                    len(episode_rewards), np.mean(episode_rewards),
+                    np.median(episode_rewards), np.min(episode_rewards),
+                    np.max(episode_rewards), dist_entropy, value_loss,
+                    action_loss, np.mean(gail_rewards),
+                    gail_loss, gail_loss_e, gail_loss_p
+                )
+            )
             # actor_critic.dist.logstd._bias,
 
         episode_rewards.clear()

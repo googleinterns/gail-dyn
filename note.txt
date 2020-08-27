@@ -451,14 +451,13 @@ first reshape to sequential order (2D)
 # which should align with rollout_step = 0
 
 
-# TODO: retrain everything with movable base
+# retrain everything with movable base
 
 # TODO: soft error should at least be temporal enxtended
 
 # TODO: think of DeepMimic initialization
 
 # try GAN? (multi-step)
-# try torque limit envs.
 
 # Does policy batch even matters??
 expert 128, policy 1??
@@ -467,13 +466,12 @@ then what about expert 1, policy 1 (downsample 128)
 this is not only downsample then, but also using tiny batch size to update
 
 
-# why behavior always to one side??
-
-
 # difference between adaptive alive bonus and adaptive final reward
 
 
-# TODO: Clip weights of discriminator
+# Clip weights of discriminator
 
 
 # TODO: GAE lambda higher might be better for sparse reward
+
+# TODO: architecture: have one action that controls force or not.

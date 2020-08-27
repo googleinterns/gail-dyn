@@ -163,6 +163,11 @@ def get_args():
         '--warm-start',
         default='',
         help='policy pathname to warm start')
+    parser.add_argument(
+        '--warm-start-logstd',
+        type=float,
+        default=None,
+        help='change warm start logstd to value if not None (default)')
 
     parser.add_argument(
         '--gail',
@@ -203,6 +208,11 @@ def get_args():
         type=int,
         default=100,
         help='gail D hidden dim (default: 100)')
+    parser.add_argument(
+        '--gail-tar-length',
+        type=float,
+        default=100,
+        help='gail demonstrations average episode length')
 
     args, extra_dict = parse_args_with_unknown(parser)
 

@@ -38,7 +38,6 @@ class LaikagoActFEnv(gym.Env):
                  act_noise=True,
                  obs_noise=True,
                  control_skip=10,
-                 using_torque_ctrl=True,
 
                  max_tar_vel=2.5,
                  energy_weight=0.1,
@@ -49,8 +48,8 @@ class LaikagoActFEnv(gym.Env):
                  vel_r_weight=4.0,
 
                  train_dyn=True,  # if false, fix dyn and train motor policy
-                 pretrain_dyn=False,        # pre-train with deviation to sim
-                 enlarge_act_range=True,    # make behavior pi more diverse to match collection
+                 pretrain_dyn=False,  # pre-train with deviation to sim
+                 enlarge_act_range=True,  # make behavior pi more diverse to match collection
                  behavior_dir="trained_models_laika_bullet_12/ppo",
                  behavior_env_name="LaikagoBulletEnv-v1",
                  dyn_dir="",
@@ -97,10 +96,10 @@ class LaikagoActFEnv(gym.Env):
             self.dyn_actor_critic = None
             # load fixed behavior policy
             self.go_actor_critic, _, \
-            self.recurrent_hidden_states, \
-            self.masks = utils.load(
-                behavior_dir, behavior_env_name, self.cuda_env, None
-            )
+                self.recurrent_hidden_states, \
+                self.masks = utils.load(
+                    behavior_dir, behavior_env_name, self.cuda_env, None
+                )
         else:
             if dyn_iter:
                 dyn_iter = int(dyn_iter)
@@ -108,10 +107,10 @@ class LaikagoActFEnv(gym.Env):
             self.go_actor_critic = None
             # load fixed dynamics model
             self.dyn_actor_critic, _, \
-            self.recurrent_hidden_states, \
-            self.masks = utils.load(
-                dyn_dir, dyn_env_name, self.cuda_env, dyn_iter
-            )
+                self.recurrent_hidden_states, \
+                self.masks = utils.load(
+                    dyn_dir, dyn_env_name, self.cuda_env, dyn_iter
+                )
             #
             # self.discri = utils.load_gail_discriminator(dyn_dir,
             #                                             dyn_env_name,
@@ -172,7 +171,7 @@ class LaikagoActFEnv(gym.Env):
         # self.d_scores = []
         self.update_extended_observation()
 
-        self.ratios = np.array([[]]).reshape(0,12)
+        self.ratios = np.array([[]]).reshape(0, 12)
 
         return self.obs
 
@@ -213,14 +212,14 @@ class LaikagoActFEnv(gym.Env):
         self._imaginary_robot.soft_reset_to_state(self._imaginary_p, robo_state_vec)
         robo_state_i = self._imaginary_robot.get_robot_raw_state_vec()
 
-        robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
+        robo_action = np.clip(robo_action, -1.0, 1.0)  # should also clip
         for _ in range(self.control_skip):
             self._imaginary_robot.apply_action(robo_action)
             self._imaginary_p.stepSimulation()
             # if self.render:
             #     time.sleep(self._ts * 0.5)
 
-        return self._imaginary_robot.get_robot_observation(), robo_state_i       # pre-state_i
+        return self._imaginary_robot.get_robot_observation(), robo_state_i  # pre-state_i
 
     def rollout_one_step_imaginary_same_session(self):
         # and get the obs vector [no tar vel] in sim
@@ -229,7 +228,7 @@ class LaikagoActFEnv(gym.Env):
 
         robo_action = self.obs[self.behavior_obs_len:]
 
-        robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
+        robo_action = np.clip(robo_action, -1.0, 1.0)  # should also clip
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)
             self._p.stepSimulation()
@@ -243,7 +242,7 @@ class LaikagoActFEnv(gym.Env):
         # print(np.linalg.norm(np.array(obs1) - np.array(obs2)))
         # print(1.5-np.linalg.norm(np.array(obs1[36:]) - np.array(obs2[36:])))
         # return -np.mean(np.abs((np.array(obs1[:36]) - np.array(obs2[:36])) / np.array(obs2[:36]))) * 100
-        return 0.4-np.sum(np.abs(np.array(obs1[:36]) - np.array(obs2[:36])))      # obs len 48
+        return 0.4 - np.sum(np.abs(np.array(obs1[:36]) - np.array(obs2[:36])))  # obs len 48
         # return 6.0 -np.sum(np.abs(np.array(obs1[3:]) - np.array(obs2[3:]))) \
         #        -np.sum(np.abs(np.array(obs1[:6]) - np.array(obs2[:6]))) * 20.0    # obs len 48
 
@@ -281,7 +280,7 @@ class LaikagoActFEnv(gym.Env):
         # TODO
         if self.pretrain_dyn:
             # self.state_id = self._p.saveState()
-            self.img_obs, pre_s_i = self.rollout_one_step_imaginary()     # takes the old self.obs
+            self.img_obs, pre_s_i = self.rollout_one_step_imaginary()  # takes the old self.obs
             # img_obs = self.rollout_one_step_imaginary_same_session()
             # self._p.restoreState(self.state_id)
             pre_s = self.robot.get_robot_raw_state_vec()
@@ -307,8 +306,8 @@ class LaikagoActFEnv(gym.Env):
         height = root_pos[2]
         q, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
         # print(np.max(np.abs(dq)))
-        in_support = self.robot.is_root_com_in_support()
-        rpy = self._p.getEulerFromQuaternion(self.obs[9:13])
+        # in_support = self.robot.is_root_com_in_support()
+        # rpy = self._p.getEulerFromQuaternion(self.obs[9:13])
 
         if not self.pretrain_dyn:
             reward = self.ab  # alive bonus
@@ -422,7 +421,8 @@ class LaikagoActFEnv(gym.Env):
         return s
 
     def cam_track_torso_link(self):
-        distance = 5
+        distance = 2
         yaw = 0
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
-        self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0, 0.4])
+        distance -= root_pos[1]
+        self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0.0, 0.4])

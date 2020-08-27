@@ -17,6 +17,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pkl
+*.joblib
 MANIFEST
 
 *trained_models*/
@@ -25,3 +27,5 @@ log/
 
 *images/
 data/
+imgs/
+*.sh

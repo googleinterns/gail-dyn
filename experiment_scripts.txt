@@ -1270,6 +1270,7 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" --num-st
 08-15 12:30 early terminate fine-tune when D score small
 
 
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # re-organize the pipeline a bit
 # behavior policy should not take y as input (keep z for now)
 # behavior use rotation matrix rather than quat
@@ -1382,5 +1383,24 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" --save-i
 
 
 
+# new behavior without contact as observation
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v3" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_48 --seed 20048 --act_noise 1 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v3" --num-steps 1500  --num-processes 8 \
+ --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 --use-linear-lr-decay  \
+ --clip-param 0.2 --save-dir trained_models_laika_bullet_49 --seed 20049 --act_noise 0 --obs_noise 0  \
+ --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001
+
+# TODO: need more!
 
 
+ # train on deformable PPO
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v3" --save-interval 2 --log-interval 2 \
+--num-steps 1000 --num-processes 2 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 10 \
+--num-mini-batch 8 --num-env-steps 2000000 --use-linear-lr-decay --clip-param 0.2 \
+  --save-dir trained_models_laika_bullet_48_finetune_deform --seed 52001 \
+  --warm-start "./trained_models_laika_bullet_48/ppo/LaikagoBulletEnv-v3.pt" \
+  --act_noise 0 --obs_noise 0 --warm-start-logstd -1

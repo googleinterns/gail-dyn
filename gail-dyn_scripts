@@ -407,3 +407,71 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v1" --algo
 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
 --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
 --gail_downsample_frequency 1 --gamma 0.99
+
+
+08-24 20:54
+# feat with q, rotation matrix, no dq
+# rew_rms_ab_airl_gamma99
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_feat_wq.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_featwq  --seed 50320 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.99
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+   --load-dir trained_models_Gdyn_laika_bullet_soft23gt_featwq/ppo --render 1 --non-det 1 --train_dyn 1 \
+      --behavior_dir trained_models_laika_bullet_23/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0   \
+        --load-dis 0 --seed 109  --enlarge_act_range 1 --act_noise 0 --obs_noise 0 --pretrain_dyn 1 --cuda-env 0
+
+
+08-24 23:24
+# larger D
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_softfloor_n200_feat_wq.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft23gt_featwq_2  --seed 50321 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 200
+
+08-25 10:41
+# behavior 36 (new gap)
+#             dq = dq / 5.0       # void pi 23
+# max_fz = approx_mass * 9.81 * 3  # 3mg
+# num_of_expert_dones = (args.num_steps * args.num_processes) / 200.0
+
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_36_softfloor_n200_feat_wq.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft36gt_featwq  --seed 50330 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_36/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 200  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 200
+
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
+   --load-dir trained_models_Gdyn_laika_bullet_soft36gt_featwq/ppo --render 1 --non-det 1 --train_dyn 1 \
+      --behavior_dir trained_models_laika_bullet_36/ppo --behavior_env_name "LaikagoBulletEnv-v1" --save-traj 0   \
+        --load-dis 0 --seed 109  --enlarge_act_range 1 --act_noise 0 --obs_noise 0 --pretrain_dyn 1 --cuda-env 0
+
+
+
+08-25 13:40
+# lower power dq gap
+# feat wq
+# gamma 0.95
+# larger D
+# fix soft reset
+# num_of_expert_dones = (args.num_steps * args.num_processes) / 100.0
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v1" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_23_lowpower_dq_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_lowdq23gt_featwq  --seed 50410 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 64  --enlarge_act_range 1 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.95

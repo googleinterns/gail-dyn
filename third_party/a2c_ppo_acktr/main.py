@@ -123,7 +123,7 @@ def main():
             # feat_select_func = dummy.robot.feature_selection_laika
             # feat_select_func = dummy.robot.feature_selection_all_laika
             # feat_select_func = dummy.robot.feature_selection_withq_laika
-            feat_select_func = dummy.robot.feature_selection_G2BD_laika_v2
+            feat_select_func = dummy.feature_selection_G2BD_laika_v2
         except:
             print("feat select not found")
             pass

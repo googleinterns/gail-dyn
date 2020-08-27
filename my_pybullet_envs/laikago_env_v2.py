@@ -328,3 +328,23 @@ class LaikagoBulletEnvV2(gym.Env):
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         distance -= root_pos[1]
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0.0, 0.4])
+
+    def feature_selection_B2D_laika_v2(self, full_obs):
+        # assume for now that Behavior and Dis share same features (thus length)
+        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 4)     # +4 for normal forces
+        feature = list(full_obs)
+        return feature
+
+    def feature_selection_G2BD_laika_v2(self, full_obs):
+        # assume for now that Behavior and Dis share same features (thus length)
+        # and that G is longer (with dqs)
+
+        # G obs with behavior action or not
+        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 4 + 3 + 12) \
+            or len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 4 + 3 + 12 + 12)
+
+        length = 1 + 9 + 3 + 12 + 12
+        length_after_dq = length + 3 + 12
+        re = list(full_obs[:length]) + list(full_obs[length_after_dq:length_after_dq+4])
+        # print(len(re))
+        return re

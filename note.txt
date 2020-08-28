@@ -474,4 +474,12 @@ this is not only downsample then, but also using tiny batch size to update
 
 # TODO: GAE lambda higher might be better for sparse reward
 
-# TODO: architecture: have one action that controls force or not.
+# figs to add
+1. overfitting or extrapolating: test/reset on hold out trajs (can be done with Env v1)
+    Error on policy generated trajs vs. error on expert trajs.
+
+2. scatter plot of actuator net output
+3. 4 videos (add 1)
+
+# TODO: maybe use tanh to clip??
+# TODO: maybe plot episode length / task reward distribution

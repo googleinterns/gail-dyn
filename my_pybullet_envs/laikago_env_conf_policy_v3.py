@@ -38,8 +38,8 @@ class LaikagoConFEnvV3(gym.Env):
     def __init__(self,
                  render=True,
                  init_noise=True,
-                 act_noise=True,
-                 obs_noise=True,
+                 act_noise=False,
+                 obs_noise=False,
                  control_skip=10,
 
                  max_tar_vel=2.5,
@@ -268,7 +268,7 @@ class LaikagoConFEnvV3(gym.Env):
             robo_action = self.obs[-self.behavior_act_len:]
         else:
             robo_action = a
-
+            robo_action = np.clip(robo_action, -1.0, 1.0)
             env_pi_obs = np.concatenate((self.obs, robo_action))
             env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
             with torch.no_grad():
@@ -288,7 +288,6 @@ class LaikagoConFEnvV3(gym.Env):
 
         # TODO
         # # this is post noise (unseen), different from seen diversify of self.enlarge_act_scale
-        robo_action = np.clip(robo_action, -1.0, 1.0)
         if self.act_noise:
             robo_action = utils.perturb(robo_action, 0.05, self.np_random)
 
@@ -359,7 +358,8 @@ class LaikagoConFEnvV3(gym.Env):
 
         # print("------")
         # conf policy will not have body-in-contact flag
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
+        # not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
         #
@@ -435,6 +435,7 @@ class LaikagoConFEnvV3(gym.Env):
 
             # 25% noise if a clipped to -1, 1
             action = utils.perturb(action, self.enlarge_act_range, self.np_random)
+            action = np.clip(action, -1.0, 1.0)
             self.behavior_act_len = len(action)
 
             self.obs = list(self.obs) + list(action)

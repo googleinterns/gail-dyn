@@ -182,7 +182,7 @@ class LaikagoBulletV2:
 
     def apply_action(self, a):
 
-        self.torque = a * self.max_forces
+        self.torque = np.array(a) * self.max_forces
 
         self._p.setJointMotorControlArray(
             bodyIndex=self.go_id,

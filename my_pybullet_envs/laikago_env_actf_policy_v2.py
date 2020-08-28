@@ -268,10 +268,9 @@ class LaikagoActFEnvV2(gym.Env):
         if self.train_dyn:
             env_action = a
             robo_action = self.obs[-self.behavior_act_len:]
-            robo_action = np.clip(robo_action, -1.0, 1.0)
         else:
             robo_action = a
-            robo_action = np.clip(robo_action, -1.0, 1.0)       # TODO: maybe re-train for this mod
+            robo_action = np.clip(robo_action, -1.0, 1.0)
             env_pi_obs = np.concatenate((self.obs, robo_action))
             env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
             with torch.no_grad():
@@ -428,6 +427,7 @@ class LaikagoActFEnvV2(gym.Env):
 
             # 25% noise if a clipped to -1, 1
             action = utils.perturb(action, self.enlarge_act_range, self.np_random)
+            action = np.clip(action, -1.0, 1.0)
             self.behavior_act_len = len(action)
 
             self.obs = list(self.obs) + list(action)

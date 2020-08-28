@@ -285,8 +285,9 @@ class LaikagoBulletEnvV3(gym.Env):
         # rpy = self._p.getEulerFromQuaternion(obs[8:12])
 
         # for data collection
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
         # TODO
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        # not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
         return obs, reward, not not_done, {}

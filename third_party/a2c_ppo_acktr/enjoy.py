@@ -146,6 +146,10 @@ args, extra_dict = parse_args_with_unknown(parser)
 
 np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
 
+torch.manual_seed(args.seed)
+np.random.seed(args.seed)
+random.seed(args.seed)
+
 is_cuda = False
 device = "cuda" if is_cuda else "cpu"
 
@@ -176,11 +180,6 @@ try:
 except:
     print("feat select not found!!!!!!!!!!!")
     feat_select_func = None
-
-# TODO: not working yet
-torch.manual_seed(args.seed)
-np.random.seed(args.seed)
-random.seed(args.seed)
 
 if args.src_env_name == "":
     env_name_transfer = args.env_name
@@ -245,11 +244,15 @@ while True:
         # TODO, name duplicate
         # 25% noise if a clipped to -1, 1
         action += (torch.rand(action.size()).to(device) - 0.5) * (args.enlarge_act_range * 2)
+        # print(action)
 
     if args.save_traj:
         tuple_sas = []
         obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
         tuple_sas.append(obs_feat[0])   # only one process env
+
+        # save clamped action (note: dyn envs might have action larger than 1)
+        action = action.clamp(-1., 1)
 
     if args.load_dis:
         obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
@@ -304,7 +307,7 @@ while True:
             f"{args.load_dir}\t"
             f"tr: {reward_total:.1f}\t"
             f"x: {last_dist:.2f}\t"
-            f"tr_ave: {reward_total/len(list_r_per_step):.1f}\t"
+            f"tr_ave: {reward_total/len(list_r_per_step):.2f}\t"
         )
         list_rewards.append(reward_total)
         reward_total = 0.0

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from .laikago_v2 import LaikagoBulletV2
-from .laikago_env_v2 import LaikagoBulletEnvV2
+from .laikago_env_v3 import LaikagoBulletEnvV3
 
 from pybullet_utils import bullet_client
 import pybullet
@@ -30,14 +30,16 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-class LaikagoActFEnvV2(gym.Env):
+# this is called V3 because it shares same obs space with Laikago env V3
+# the robot is still Laikago V2 though, same as env V3
+class LaikagoConFEnvV3(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
     def __init__(self,
                  render=True,
                  init_noise=True,
-                 act_noise=False,
-                 obs_noise=False,
+                 act_noise=True,
+                 obs_noise=True,
                  control_skip=10,
 
                  max_tar_vel=2.5,
@@ -50,11 +52,11 @@ class LaikagoActFEnvV2(gym.Env):
 
                  train_dyn=True,  # if false, fix dyn and train motor policy
                  pretrain_dyn=False,        # pre-train with deviation to sim
-                 enlarge_act_range=0.25,    # make behavior pi more diverse to match collection, only train_dyn
-                 behavior_dir="trained_models_laika_bullet_43/ppo",
-                 behavior_env_name="LaikagoBulletEnv-v2",
+                 enlarge_act_range=0.25,    # make behavior pi more diverse to match collection
+                 behavior_dir="trained_models_laika_bullet_48/ppo",
+                 behavior_env_name="LaikagoBulletEnv-v3",
                  dyn_dir="",
-                 dyn_env_name="LaikagoActFEnv-v2",
+                 dyn_env_name="LaikagoConFEnv-v3",  # itself
                  dyn_iter=None,
 
                  cuda_env=True,
@@ -93,7 +95,7 @@ class LaikagoActFEnvV2(gym.Env):
         self.viewer = None
         self.timer = 0
 
-        self.feat_select_func = LaikagoBulletEnvV2.feature_selection_G2BD_laika_v2
+        self.feat_select_func = LaikagoBulletEnvV3.feature_selection_G2BD_laika_v3
 
         if self.train_dyn:
             self.dyn_actor_critic = None
@@ -167,18 +169,14 @@ class LaikagoActFEnvV2(gym.Env):
             # self._p.setPhysicsEngineParameter(restitutionVelocityThreshold=0.000001)
 
             self.floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+            # conf policy does not use bullet collision
+            self._p.setCollisionFilterGroupMask(self.floor_id, -1, 0, 0)
 
             self.robot.reset(self._p)
             self.init_state = self._p.saveState()
 
         self._p.stepSimulation()
 
-        for foot in self.robot.feet:
-            cps = self._p.getContactPoints(self.robot.go_id, self.floor_id, foot, -1)
-            if len(cps) > 0:
-                print("warning")
-
-        self.normal_forces = np.array([[0., 0, 0, 0]])
         self.timer = 0
         # self.d_scores = []
         self.update_extended_observation()
@@ -264,14 +262,13 @@ class LaikagoActFEnvV2(gym.Env):
     #     #        -np.sum(np.abs(np.array(obs1[:6]) - np.array(obs2[:6]))) * 20.0    # obs len 48
 
     def step(self, a):
-        # TODO: in this env, env_action is 12D, being the scaling factors for torque command
+        # TODO: currently for laika, env_action is 12D, 4 feet 3D without wrench
         if self.train_dyn:
             env_action = a
             robo_action = self.obs[-self.behavior_act_len:]
-            robo_action = np.clip(robo_action, -1.0, 1.0)
         else:
             robo_action = a
-            robo_action = np.clip(robo_action, -1.0, 1.0)       # TODO: maybe re-train for this mod
+
             env_pi_obs = np.concatenate((self.obs, robo_action))
             env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
             with torch.no_grad():
@@ -291,8 +288,9 @@ class LaikagoActFEnvV2(gym.Env):
 
         # TODO
         # # this is post noise (unseen), different from seen diversify of self.enlarge_act_scale
-        # if self.act_noise:
-        #     robo_action = utils.perturb(robo_action, 0.05, self.np_random)
+        robo_action = np.clip(robo_action, -1.0, 1.0)
+        if self.act_noise:
+            robo_action = utils.perturb(robo_action, 0.05, self.np_random)
 
         # # TODO
         # if self.pretrain_dyn:
@@ -306,23 +304,12 @@ class LaikagoActFEnvV2(gym.Env):
         #     assert np.allclose(pre_s, pre_s_i, atol=1e-5)
 
         for _ in range(self.control_skip):
-            self.robot.apply_action(env_action)
+            self.robot.apply_action(robo_action)
+            self.apply_scale_clip_conf_from_pi(env_action)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)
             self.timer += 1
-
-            if self.timer % 2 == 0:
-                cur_forces = []
-                # last normal forces
-                for foot in self.robot.feet:
-                    cps = self._p.getContactPoints(self.robot.go_id, self.floor_id, foot, -1)
-                    normal_f_sum = 0
-                    # print(len(cps))   # 0 or 1 or 2??
-                    for cp in cps:
-                        normal_f_sum += cp[9]  # normal force
-                    cur_forces.extend([normal_f_sum / 500.0])
-                self.normal_forces = np.append(self.normal_forces, [cur_forces], axis=0)
 
         self.update_extended_observation()
 
@@ -402,6 +389,29 @@ class LaikagoActFEnvV2(gym.Env):
     #     obs_i[:len(self.img_obs)] = self.img_obs
     #     return obs_i
 
+    def apply_scale_clip_conf_from_pi(self, con_f):
+
+        approx_mass = 26.0
+        max_fz = approx_mass * 9.81 * 2  # 2mg        # TODO
+
+        for foot_ind, link in enumerate(self.robot.feet):
+            this_con_f = con_f[foot_ind*3: (foot_ind+1)*3]
+            # first dim represents fz
+            if this_con_f[0] < 0:
+                this_con_f[0] /= 20
+            fz = np.interp(this_con_f[0], [-0.1, 2], [-max_fz / 20, max_fz])
+            # second dim represents fx
+            fx = np.interp(this_con_f[1], [-2, 2], [-1.8*fz, 1.8*fz])
+            # fx = np.sign(fx) * np.maximum(np.abs(fx) - 0.6 * max_fz, 0.0)   # mu<=1.2
+            # third dim represents fy
+            fy = np.interp(this_con_f[2], [-2, 2], [-1.8*fz, 1.8*fz])
+            # fy = np.sign(fy) * np.maximum(np.abs(fy) - 0.6 * max_fz, 0.0)   # mu<=1.2
+
+            utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
+                                                            [fx, fy, fz],
+                                                            [0, 0, 0],
+                                                            self._p)
+
     def get_ave_dx(self):
         return self.velx
 
@@ -410,9 +420,6 @@ class LaikagoActFEnvV2(gym.Env):
 
     def update_extended_observation(self):
         self.obs = self.robot.get_robot_observation(with_vel=True)
-
-        # actually should /2 (downsample)
-        self.obs.extend(list(np.mean(self.normal_forces[-self.control_skip:], axis=0)))
 
         if self.obs_noise:
             self.obs = utils.perturb(self.obs, 0.1, self.np_random)

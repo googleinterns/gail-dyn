@@ -475,3 +475,30 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v1" \
 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_23/ppo" \
 --behavior_env_name "LaikagoBulletEnv-v1" --hidden_size 64  --enlarge_act_range 1 --cuda_env 0 \
 --gail_downsample_frequency 1 --gamma 0.95
+
+08-26 14:00
+# gail-dyn, hard act gap...
+# num_of_expert_dones = (args.num_steps * args.num_processes) / 200.0
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_43_lowpower_dq_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_lowdq43gt --seed 50601 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_43/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v2" --hidden_size 100  --enlarge_act_range 0.25 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99
+
+
+# try finetune
+# self.logstd = AddBias(torch.ones(num_outputs) * -1)
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" --save-interval 5 --log-interval 5 \
+--num-steps 1000 --num-processes 8 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 --entropy-coef 0.00 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_lowdq43gt/ppo \
+--save-dir trained_models_laika_bullet_43_lowdq_FTGAIL --seed 51700  \
+--warm-start "./trained_models_laika_bullet_43/ppo/LaikagoBulletEnv-v2.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 450
+
+
+
+

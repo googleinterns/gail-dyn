@@ -80,6 +80,8 @@ class LaikagoActFEnvV2(gym.Env):
         self.pretrain_dyn = pretrain_dyn
         self.cuda_env = cuda_env
 
+        self.ratio = None
+
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
         else:
@@ -279,6 +281,10 @@ class LaikagoActFEnvV2(gym.Env):
                 )
             env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
 
+        # if self.ratio is None:
+        #     self.ratio = np.array([env_action / robo_action])
+        # else:
+        #     self.ratio = np.append(self.ratio, [env_action / robo_action], axis=0)
             # self.ratios = np.append(self.ratios, [env_action / robo_action], axis=0)
             #
             # env_pi_obs_feat = self.feat_select_func(self.obs)
@@ -376,8 +382,23 @@ class LaikagoActFEnvV2(gym.Env):
         # not_done = True
         #
         # if not not_done:
-        #     print(self.ratios.shape)
-        #     print(np.mean(self.ratios, axis=0))
+        #     print(self.ratio.shape)
+        #     labels = list("123456789ABC")
+        #     data = self.ratio
+        #     from matplotlib import pyplot as plt
+        #     width = 0.4
+        #     fig, ax = plt.subplots()
+        #     for i, l in enumerate(labels):
+        #         x = np.ones(data.shape[0]) * i + (np.random.rand(data.shape[0]) * width - width / 2.)
+        #         ax.scatter(x, data[:, i], s=25)
+        #         median = np.median(data[:, i])
+        #         ax.plot([i - width / 2., i + width / 2.], [median, median], color="k")
+        #
+        #     plt.ylim(-5, 5)
+        #     ax.set_xticks(range(len(labels)))
+        #     ax.set_xticklabels(labels)
+        #     plt.show()
+        #     self.ratio = None
 
         # if not self.train_dyn:
         #     dis_action = self.feat_select_func(self.obs)

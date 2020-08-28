@@ -214,6 +214,7 @@ done = False
 reward_total = 0
 
 list_rewards = []
+list_traj_lengths = []
 list_r_per_step = []
 dist = 0
 last_dist = 0
@@ -303,13 +304,15 @@ while True:
     reward_total += reward.cpu().numpy()[0][0]
 
     if done:
+        list_rewards.append(reward_total)
+        list_traj_lengths.append(len(list_r_per_step))
         print(
             f"{args.load_dir}\t"
             f"tr: {reward_total:.1f}\t"
             f"x: {last_dist:.2f}\t"
             f"tr_ave: {reward_total/len(list_r_per_step):.2f}\t"
+            f"total_per_step_r_ave: {np.sum(list_rewards)/np.sum(list_traj_lengths):.2f}\t"
         )
-        list_rewards.append(reward_total)
         reward_total = 0.0
         # env_core.reset_counter = 0
 

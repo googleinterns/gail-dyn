@@ -98,6 +98,8 @@ class LaikagoBulletEnvV2(gym.Env):
         obs_dummy = np.array([1.12234567] * self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
+        self.b2d_feat_select = self.feature_selection_B2D_laika_v2
+
     def reset(self):
 
         if self.reset_counter < self.reset_const:
@@ -329,13 +331,15 @@ class LaikagoBulletEnvV2(gym.Env):
         distance -= root_pos[1]
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0.0, 0.4])
 
-    def feature_selection_B2D_laika_v2(self, full_obs):
+    @staticmethod
+    def feature_selection_B2D_laika_v2(full_obs):
         # assume for now that Behavior and Dis share same features (thus length)
         assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 4)     # +4 for normal forces
         feature = list(full_obs)
         return feature
 
-    def feature_selection_G2BD_laika_v2(self, full_obs):
+    @staticmethod
+    def feature_selection_G2BD_laika_v2(full_obs):
         # assume for now that Behavior and Dis share same features (thus length)
         # and that G is longer (with dqs)
 

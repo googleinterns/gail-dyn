@@ -172,8 +172,9 @@ try:
     # feat_select_func = env_core.robot.feature_selection_all_laika
     # feat_select_func = env_core.robot.feature_selection_laika
     # feat_select_func = env_core.robot.feature_selection_withq_laika
-    feat_select_func = env_core.feature_selection_B2D_laika_v2
+    feat_select_func = env_core.b2d_feat_select
 except:
+    print("feat select not found!!!!!!!!!!!")
     feat_select_func = None
 
 # TODO: not working yet

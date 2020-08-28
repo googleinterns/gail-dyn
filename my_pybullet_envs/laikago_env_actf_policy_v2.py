@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from .laikago_v2 import LaikagoBulletV2
+from .laikago_env_v2 import LaikagoBulletEnvV2
 
 from pybullet_utils import bullet_client
 import pybullet
@@ -92,7 +93,7 @@ class LaikagoActFEnvV2(gym.Env):
         self.viewer = None
         self.timer = 0
 
-        self.feat_select_func = self.robot.feature_selection_G2BD_laika_v2
+        self.feat_select_func = LaikagoBulletEnvV2.feature_selection_G2BD_laika_v2
 
         if self.train_dyn:
             self.dyn_actor_critic = None

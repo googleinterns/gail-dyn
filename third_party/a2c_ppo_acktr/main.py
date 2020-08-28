@@ -123,9 +123,11 @@ def main():
             # feat_select_func = dummy.robot.feature_selection_laika
             # feat_select_func = dummy.robot.feature_selection_all_laika
             # feat_select_func = dummy.robot.feature_selection_withq_laika
-            feat_select_func = dummy.feature_selection_G2BD_laika_v2
+
+            # assume same B & D features
+            feat_select_func = dummy.feat_select_func
         except:
-            print("feat select not found")
+            print("feat select not found!!!!!!!!!!!")
             pass
 
     # dummy.close()

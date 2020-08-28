@@ -102,6 +102,8 @@ class LaikagoBulletEnvV3(gym.Env):
         obs_dummy = np.array([1.12234567] * self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
+        self.b2d_feat_select = self.feature_selection_B2D_laika_v3
+
     def reset(self):
 
         if self.reset_counter < self.reset_const:
@@ -126,6 +128,10 @@ class LaikagoBulletEnvV3(gym.Env):
                 self.floor_id = self._p.loadURDF(
                     os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, -20.02], useFixedBase=1
                 )
+
+                # something is wrong with this API
+                # seems that you must add cube.obj to pybullet_data folder for this to work
+                # it cannot search relative path in the repo
                 _ = self._p.loadSoftBody("cube.obj", basePosition=[7, 0, -10], scale=20, mass=4000.,
                                          useNeoHookean=0,
                                          useBendingSprings=1, useMassSpring=1, springElasticStiffness=60000,
@@ -317,3 +323,24 @@ class LaikagoBulletEnvV3(gym.Env):
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         distance -= root_pos[1]
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0.0, 0.4])
+
+    @staticmethod
+    def feature_selection_B2D_laika_v3(full_obs):
+        # assume for now that Behavior and Dis share same features (thus length)
+        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12)     # v3 no normal forces
+        feature = list(full_obs)
+        return feature
+
+    @staticmethod
+    def feature_selection_G2BD_laika_v3(full_obs):
+        # assume for now that Behavior and Dis share same features (thus length)
+        # and that G is longer (with dqs)
+
+        # G obs with behavior action or not
+        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12) \
+            or len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12 + 12)
+
+        length = 1 + 9 + 3 + 12 + 12
+        re = list(full_obs[:length])
+        # print(len(re))
+        return re

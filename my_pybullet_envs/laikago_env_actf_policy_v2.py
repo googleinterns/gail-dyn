@@ -53,6 +53,7 @@ class LaikagoActFEnvV2(gym.Env):
                  enlarge_act_range=0.25,    # make behavior pi more diverse to match collection, only train_dyn
                  behavior_dir="trained_models_laika_bullet_43/ppo",
                  behavior_env_name="LaikagoBulletEnv-v2",
+                 behavior_iter=None,
                  dyn_dir="",
                  dyn_env_name="LaikagoActFEnv-v2",
                  dyn_iter=None,
@@ -98,12 +99,14 @@ class LaikagoActFEnvV2(gym.Env):
         self.feat_select_func = LaikagoBulletEnvV2.feature_selection_G2BD_laika_v2
 
         if self.train_dyn:
+            if behavior_iter:
+                behavior_iter = int(behavior_iter)
             self.dyn_actor_critic = None
             # load fixed behavior policy
             self.go_actor_critic, _, \
                 self.recurrent_hidden_states, \
                 self.masks = utils.load(
-                    behavior_dir, behavior_env_name, self.cuda_env, None
+                    behavior_dir, behavior_env_name, self.cuda_env, behavior_iter
                 )
         else:
             if dyn_iter:

@@ -29,7 +29,7 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-class LaikagoConFEnv(gym.Env):
+class LaikagoConFEnvRev(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
     def __init__(self,
@@ -59,8 +59,8 @@ class LaikagoConFEnv(gym.Env):
                  dyn_iter=None,
 
                  cuda_env=True,
-
-                 soft_floor_env=False,      # for collecting data
+                 #
+                 # soft_floor_env=False,      # for collecting data
                  ):
 
         self.render = render
@@ -82,7 +82,7 @@ class LaikagoConFEnv(gym.Env):
         self.enlarge_act_range = enlarge_act_range
         self.pretrain_dyn = pretrain_dyn
         self.cuda_env = cuda_env
-        self.soft_floor_env = soft_floor_env
+        # self.soft_floor_env = soft_floor_env
 
         if self.render:
             self._p = bullet_client.BulletClient(connection_mode=pybullet.GUI)
@@ -118,13 +118,6 @@ class LaikagoConFEnv(gym.Env):
             self.masks = utils.load(
                 dyn_dir, dyn_env_name, self.cuda_env, dyn_iter
             )
-            #
-            # self.discri = utils.load_gail_discriminator(dyn_dir,
-            #                                             dyn_env_name,
-            #                                             self.cuda_env,
-            #                                             dyn_iter)
-            #
-            # self.feat_select_func = self.robot.feature_selection_all_laika
 
         self.reset_counter = 50  # do a hard reset first
         self.obs = []
@@ -132,8 +125,6 @@ class LaikagoConFEnv(gym.Env):
         self.behavior_act_len = None
         self.init_state = None
         self.reset()  # and update init obs
-        #
-        # self.d_scores = []
 
         # set up imaginary session for pre-train
         self.set_up_imaginary_session()
@@ -170,23 +161,19 @@ class LaikagoConFEnv(gym.Env):
 
             floor_id = self._p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
 
-            if not self.soft_floor_env:
-                self._p.setCollisionFilterGroupMask(floor_id, -1, 0, 0)
-
             self.robot.reset(self._p)
             self.init_state = self._p.saveState()
 
-            # should be after reset!
-            if self.soft_floor_env:
-                damp = np.random.uniform(50.0, 75.0)
-                stiff = np.random.uniform(75.0, 150.0)
-                self._p.changeDynamics(floor_id, -1, contactDamping=damp, contactStiffness=stiff)
-                for ind in self.robot.feet:
-                    self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
+            # in reverse env, main session is soft floor gt
+            # TODO: for pi23
+            damp = 60
+            stiff = 120
+            self._p.changeDynamics(floor_id, -1, contactDamping=damp, contactStiffness=stiff)
+            for ind in self.robot.feet:
+                self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
         self._p.stepSimulation()
         self.timer = 0
-        # self.d_scores = []
         self.update_extended_observation()
 
         return self.obs
@@ -202,28 +189,34 @@ class LaikagoConFEnv(gym.Env):
         self._imaginary_p.setTimeStep(self._ts)
         self._imaginary_p.setGravity(0, 0, -10)
         self._imaginary_p.setPhysicsEngineParameter(numSolverIterations=100)
-        # there is a floor in this session
-        floor_i = self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+        # imaginary session uses generated force
+
+        # floor_i = self._imaginary_p.loadURDF(os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1)
+
+
         self._imaginary_robot.reset(self._imaginary_p)
 
         self._imaginary_robot.soft_reset(self._imaginary_p)
 
-        # TODO: for pi23
-        damp = np.random.uniform(50.0, 75.0)
-        stiff = np.random.uniform(75.0, 150.0)
-        # # TODO: for pi12
-        # damp = 150.0
-        # stiff = 400.0
-        self._imaginary_p.changeDynamics(floor_i, -1, contactDamping=damp, contactStiffness=stiff)
-        for ind in self.robot.feet:
-            self._imaginary_p.changeDynamics(self._imaginary_robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
+        # if not self.soft_floor_env:
+        #     self._p.setCollisionFilterGroupMask(floor_i, -1, 0, 0)
+        #
+        # if self.soft_floor_env:
+        #     # TODO: for pi23
+        #     damp = np.random.uniform(50.0, 75.0)
+        #     stiff = np.random.uniform(75.0, 150.0)
+        #     self._imaginary_p.changeDynamics(floor_i, -1, contactDamping=damp, contactStiffness=stiff)
+        #     for ind in self.robot.feet:
+        #         self._imaginary_p.changeDynamics(self._imaginary_robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
         self._imaginary_p.stepSimulation()
 
-    def rollout_one_step_imaginary(self):
+    def rollout_one_step_imaginary(self, a):
         # and get the obs vector [no tar vel] in sim
         assert self.train_dyn
         assert self.pretrain_dyn
+
+        env_action = a
 
         robo_obs = self.obs[:self.behavior_obs_len]
         robo_action = self.obs[self.behavior_obs_len:]
@@ -238,6 +231,7 @@ class LaikagoConFEnv(gym.Env):
 
         robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
         for _ in range(self.control_skip):
+            self.apply_scale_clip_conf_from_pi(env_action)
             self._imaginary_robot.apply_action(robo_action)
             self._imaginary_p.stepSimulation()
             # if self.render:
@@ -245,19 +239,19 @@ class LaikagoConFEnv(gym.Env):
 
         return self._imaginary_robot.get_robot_observation(), robo_state_i       # pre-state_i
 
-    def rollout_one_step_imaginary_same_session(self):
-        # and get the obs vector [no tar vel] in sim
-        assert self.train_dyn
-        assert self.pretrain_dyn
-
-        robo_action = self.obs[self.behavior_obs_len:]
-
-        robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
-        for _ in range(self.control_skip):
-            self.robot.apply_action(robo_action)
-            self._p.stepSimulation()
-
-        return self.robot.get_robot_observation()
+    # def rollout_one_step_imaginary_same_session(self):
+    #     # and get the obs vector [no tar vel] in sim
+    #     assert self.train_dyn
+    #     assert self.pretrain_dyn
+    #
+    #     robo_action = self.obs[self.behavior_obs_len:]
+    #
+    #     robo_action = np.clip(robo_action, -1.0, 1.0)       # should also clip
+    #     for _ in range(self.control_skip):
+    #         self.robot.apply_action(robo_action)
+    #         self._p.stepSimulation()
+    #
+    #     return self.robot.get_robot_observation()
 
     def calc_obs_dist_pretrain(self, obs1, obs2):
         # TODO quat dist
@@ -272,24 +266,20 @@ class LaikagoConFEnv(gym.Env):
 
     def step(self, a):
 
-        if self.train_dyn:
-            # TODO: currently for laika, env_action is 12D, 4 feet 3D without wrench
-            env_action = a
-            robo_action = self.obs[self.behavior_obs_len:]
-        else:
-            robo_action = a
-            if not self.soft_floor_env:
-                env_pi_obs = np.concatenate((self.obs, robo_action))
-                env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
-                with torch.no_grad():
-                    _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
-                        env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
-                    )
-                env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
-            #
-            # env_pi_obs_feat = self.feat_select_func(self.obs)
-            # dis_state = np.concatenate((env_pi_obs_feat, robo_action))
-            # dis_state = utils.wrap(dis_state, is_cuda=self.cuda_env)
+        assert self.train_dyn
+        # TODO: currently for laika, env_action is 12D, 4 feet 3D without wrench
+        env_action = a
+        robo_action = self.obs[self.behavior_obs_len:]
+        # else:
+        #     robo_action = a
+        #     if not self.soft_floor_env:
+        #         env_pi_obs = np.concatenate((self.obs, robo_action))
+        #         env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
+        #         with torch.no_grad():
+        #             _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
+        #                 env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
+        #             )
+        #         env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
@@ -301,7 +291,7 @@ class LaikagoConFEnv(gym.Env):
 
         if self.pretrain_dyn:
             # self.state_id = self._p.saveState()
-            self.img_obs, pre_s_i = self.rollout_one_step_imaginary()     # takes the old self.obs
+            self.img_obs, pre_s_i = self.rollout_one_step_imaginary(env_action)     # takes the old self.obs
             # img_obs = self.rollout_one_step_imaginary_same_session()
             # self._p.restoreState(self.state_id)
             pre_s = self.robot.get_robot_raw_state_vec()
@@ -311,8 +301,6 @@ class LaikagoConFEnv(gym.Env):
 
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)
-            if not self.soft_floor_env:
-                self.apply_scale_clip_conf_from_pi(env_action)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)
@@ -378,16 +366,6 @@ class LaikagoConFEnv(gym.Env):
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
 
-        # if not self.train_dyn:
-        #     dis_action = self.feat_select_func(self.obs)
-        #     dis_action = utils.wrap(dis_action, is_cuda=self.cuda_env)
-        #     d_score = self.discri.predict_prob_single_step(dis_state, dis_action)
-        #     self.d_scores.append(utils.unwrap(d_score, is_cuda=self.cuda_env))
-        #     # if len(self.d_scores) > 20 and np.mean(self.d_scores[-20:]) < 0.4:
-        #     #     not_done = False
-        #     # if not not_done or self.timer==1000:
-        #     #     print(np.mean(self.d_scores))
-
         return self.obs, reward, not not_done, {}
 
     def return_imaginary_obs(self):
@@ -396,6 +374,7 @@ class LaikagoConFEnv(gym.Env):
         # obs_i[:len(self.img_obs[:-4])] = self.img_obs[:-4]
         obs_i[:len(self.img_obs)] = self.img_obs
         return obs_i
+
 
     def apply_scale_clip_conf_from_pi(self, con_f):
 
@@ -413,10 +392,10 @@ class LaikagoConFEnv(gym.Env):
             fy = np.interp(this_con_f[2], [-2, 2], [-1.8*fz, 1.8*fz])
             # fy = np.sign(fy) * np.maximum(np.abs(fy) - 0.6 * max_fz, 0.0)   # mu<=1.2
 
-            utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
+            utils.apply_external_world_force_on_local_point(self._imaginary_robot.go_id, link,
                                                             [fx, fy, fz],
                                                             [0, 0, 0],
-                                                            self._p)
+                                                            self._imaginary_p)
 
     def get_ave_dx(self):
         return self.velx

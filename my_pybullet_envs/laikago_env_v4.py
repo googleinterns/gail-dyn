@@ -21,6 +21,7 @@ import time
 import gym, gym.utils.seeding, gym.spaces
 import numpy as np
 from gan import utils
+from collections import deque
 
 import os
 import inspect
@@ -89,6 +90,9 @@ class LaikagoBulletEnvV4(gym.Env):
         self.floor_id = None
         self.velx = 0
 
+        self.w_past_obs = [0, 3, 6, 9]  # t-3. t-6. t-9
+        self.past_obs_array = deque(maxlen=10)
+
         self.reset_const = 100
         self.reset_counter = self.reset_const    # do a hard reset first
         self.init_state = None
@@ -99,6 +103,7 @@ class LaikagoBulletEnvV4(gym.Env):
         self.action_space = gym.spaces.Box(low=np.array([-1.] * self.action_dim),
                                            high=np.array([+1.] * self.action_dim))
         self.obs_dim = len(obs)
+        # print(self.obs_dim)
         obs_dummy = np.array([1.12234567] * self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
@@ -161,11 +166,9 @@ class LaikagoBulletEnvV4(gym.Env):
             self.robot.reset(self._p)
             self.init_state = self._p.saveState()
 
-        # if self.low_power_env:
-        #     # # for pi44
-        #     # self.robot.max_forces = [30.0] * 3 + [20.0] * 3 + [30.0] * 6
-        #     # # for pi43
-        #     self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
+        if self.low_power_env:
+            # # for pi51 (52)
+            self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
             damp = np.random.uniform(150.0, 1000.0)
@@ -185,6 +188,8 @@ class LaikagoBulletEnvV4(gym.Env):
                 print("warning")
 
         self.timer = 0
+        self.past_obs_array.clear()
+
         obs = self.get_extended_observation()
 
         return np.array(obs)
@@ -194,19 +199,19 @@ class LaikagoBulletEnvV4(gym.Env):
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
 
-        a = np.clip(a, -1.0, 1.0)
+        a = np.tanh(a)
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
 
-        if self.low_power_env:
-            # # for pi44
-            # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-            # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
-            # a *= max_force_ratio
-            # for pi43
-            _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-            max_force_ratio = np.clip(2 - dq/2., 0, 1)
-            a *= max_force_ratio
+        # if self.low_power_env:
+        #     # # for pi44
+        #     # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        #     # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
+        #     # a *= max_force_ratio
+        #     # for pi43
+        #     _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        #     max_force_ratio = np.clip(2 - dq/2., 0, 1)
+        #     a *= max_force_ratio
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -319,9 +324,22 @@ class LaikagoBulletEnvV4(gym.Env):
         if self.obs_noise:
             obs = utils.perturb(obs, 0.1, self.np_random)
 
+        if len(self.past_obs_array) == 0:
+            # pad init obs 10 times
+            for i in range(10):
+                self.past_obs_array.appendleft(obs)
+        else:
+            # update and pop right the oldest one
+            self.past_obs_array.appendleft(obs)
+
         # print(obs[-4:])
 
-        return obs
+        obs_all = []
+        list_past_obs = list(self.past_obs_array)
+        for t_idx in self.w_past_obs:
+            obs_all.extend(list_past_obs[t_idx])
+
+        return obs_all
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

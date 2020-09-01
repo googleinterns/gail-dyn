@@ -402,13 +402,38 @@ class LaikagoConFEnvV3(gym.Env):
             # first dim represents fz
             if this_con_f[0] < 0:
                 this_con_f[0] /= 20
-            fz = np.interp(this_con_f[0], [-0.1, 2], [-max_fz / 20, max_fz])
+            fz = np.interp(this_con_f[0], [-0.1, 3], [-max_fz / 20, max_fz])
             # second dim represents fx
             fx = np.interp(this_con_f[1], [-2, 2], [-1.8*fz, 1.8*fz])
             # fx = np.sign(fx) * np.maximum(np.abs(fx) - 0.6 * max_fz, 0.0)   # mu<=1.2
             # third dim represents fy
             fy = np.interp(this_con_f[2], [-2, 2], [-1.8*fz, 1.8*fz])
             # fy = np.sign(fy) * np.maximum(np.abs(fy) - 0.6 * max_fz, 0.0)   # mu<=1.2
+
+            utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
+                                                            [fx, fy, fz],
+                                                            [0, 0, 0],
+                                                            self._p)
+
+    def apply_scale_clip_conf_from_pi_new(self, con_f):
+
+        approx_mass = 26.0
+        max_fz = approx_mass * 9.81 * 2  # 2mg        # TODO
+
+        for foot_ind, link in enumerate(self.robot.feet):
+
+            this_con_f = np.tanh(con_f[foot_ind * 3: (foot_ind + 1) * 3])   # [-1 ,1]
+
+            pos, _ = self.robot.get_link_com_xyz_orn(link, fk=1)
+            if pos[2] < 0.01:
+                # first dim represents fz
+                # fz = np.abs(this_con_f[0]) * max_fz
+                fz = (this_con_f[0] + 1) / 2.0 * max_fz
+            else:
+                fz = 0.0
+
+            fx = this_con_f[1] * 1.5 * fz
+            fy = this_con_f[2] * 1.5 * fz
 
             utils.apply_external_world_force_on_local_point(self.robot.go_id, link,
                                                             [fx, fy, fz],

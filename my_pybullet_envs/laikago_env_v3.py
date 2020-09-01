@@ -138,6 +138,21 @@ class LaikagoBulletEnvV3(gym.Env):
                                          springDampingStiffness=150, springDampingAllDirections=1,
                                          useSelfCollision=0,
                                          frictionCoeff=1.0, useFaceContact=1)
+
+                # self.floor_id = self._p.loadURDF(
+                #     os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, -1.02], useFixedBase=1
+                # )
+                #
+                # for x in range(-1, 9):
+                #     for y in range(-2, 3):
+                #         self.box_id = self._p.loadSoftBody("cube.obj", basePosition=[x, y, -0.5], scale=1.0, mass=20.,
+                #                                            useNeoHookean=1,
+                #                                            useBendingSprings=1, useMassSpring=1,
+                #                                            springElasticStiffness=2000,
+                #                                            springDampingStiffness=5, springDampingAllDirections=1,
+                #                                            useSelfCollision=0,
+                #                                            frictionCoeff=1.0, useFaceContact=1, )
+
             else:
                 self.floor_id = self._p.loadURDF(
                   os.path.join(currentdir, 'assets/plane.urdf'), [0, 0, 0.0], useFixedBase=1

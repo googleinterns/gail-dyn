@@ -55,14 +55,24 @@ class Discriminator(nn.Module):
                          expert_action,
                          policy_state,
                          policy_action,
-                         lambda_=10):
-        alpha = torch.rand(expert_state.size(0), 1)
+                         lambda_=10.):
+
         expert_data = torch.cat([expert_state, expert_action], dim=1)
         policy_data = torch.cat([policy_state, policy_action], dim=1)
 
-        alpha = alpha.expand_as(expert_data).to(expert_data.device)
+        grad_pen = self.compute_grad_pen_combined(expert_data, policy_data, lambda_)
 
-        mixup_data = alpha * expert_data + (1 - alpha) * policy_data
+        return grad_pen
+
+    def compute_grad_pen_combined(self,
+                                  expert_combined,
+                                  policy_combined,
+                                  lambda_=10.
+                                  ):
+        alpha = torch.rand(expert_combined.size(0), 1)
+        alpha = alpha.expand_as(expert_combined).to(expert_combined.device)
+
+        mixup_data = alpha * expert_combined + (1 - alpha) * policy_combined
         mixup_data.requires_grad = True
 
         disc = self.trunk(mixup_data)
@@ -141,12 +151,58 @@ class Discriminator(nn.Module):
 
         return loss / n, expert_loss_t / n, policy_loss_t / n
 
+    def update_gail_dyn(self, expert_loader, rollouts):
+        self.train()
+
+        policy_data_generator = rollouts.feed_forward_generator(
+            None, mini_batch_size=expert_loader.batch_size)
+
+        loss = expert_loss_t = policy_loss_t = 0
+        n = 0
+        for expert_batch, policy_batch in zip(expert_loader,
+                                              policy_data_generator):
+
+            expert_data = expert_batch[0]
+            policy_data = policy_batch[-1]      # see feed_forward_generator yield
+
+            policy_d = self.trunk(policy_data)
+            expert_d = self.trunk(expert_data)
+
+            expert_loss = F.binary_cross_entropy_with_logits(
+                expert_d,
+                torch.ones(expert_d.size()).to(self.device))
+            policy_loss = F.binary_cross_entropy_with_logits(
+                policy_d,
+                torch.zeros(policy_d.size()).to(self.device))
+
+            gail_loss = expert_loss + policy_loss
+            grad_pen = self.compute_grad_pen_combined(expert_data, policy_data)
+
+            loss += (gail_loss + grad_pen).item()
+            expert_loss_t += expert_loss.item()
+            policy_loss_t += policy_loss.item()
+            n += 1
+
+            self.optimizer.zero_grad()
+            (gail_loss + grad_pen).backward()
+            self.optimizer.step()
+            #
+            # # TODO: Clip weights of discriminator
+            # for p in self.trunk.parameters():
+            #     p.data.clamp_(-0.1, 0.1)
+        return loss / n, expert_loss_t / n, policy_loss_t / n
+
     def predict_reward(self, state, action, gamma, masks, offset=0.0):
         with torch.no_grad():
             self.eval()
-            d = self.trunk(torch.cat([state, action], dim=1))
+            d_in = torch.cat([state, action], dim=1)
+            return self.predict_reward_combined(d_in, gamma, masks, offset)
+
+    def predict_reward_combined(self, d_in, gamma, masks, offset=0.0):
+        with torch.no_grad():
+            d = self.trunk(d_in)
             s = torch.sigmoid(d)
-            reward = (s + 1e-7).log() - (1 - s + 1e-7).log() + offset  # avoid exploding, should not matter TODO-0.65
+            reward = (s + 1e-7).log() - (1 - s + 1e-7).log() + offset
             if self.returns is None:
                 self.returns = reward.clone()
             else:

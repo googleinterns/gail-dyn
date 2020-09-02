@@ -54,7 +54,7 @@ import logging
 import sys
 
 sys.path.append("third_party")
-
+np.set_printoptions(precision=2, suppress=None, threshold=sys.maxsize)
 
 def main():
     args, extra_dict = get_args()
@@ -112,23 +112,7 @@ def main():
     text_file.close()
     print("source file stored")
     # input("source file stored press enter")
-
-    dummy.reset()
-    feat_select_func = None
-    if args.gail_dyn:
-        try:
-            # TODO: hopper
-            # feat_select_func = dummy.robot.feature_selection_laika
-            # feat_select_func = dummy.robot.feature_selection_all_laika
-            # feat_select_func = dummy.robot.feature_selection_withq_laika
-
-            # assume same B & D features
-            feat_select_func = dummy.feat_select_func
-        except:
-            print("feat select not found!!!!!!!!!!!")
-            pass
-
-    # dummy.close()
+    dummy.close()
 
     logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     rootLogger = logging.getLogger()
@@ -142,16 +126,7 @@ def main():
     consoleHandler.setFormatter(logFormatter)
     rootLogger.addHandler(consoleHandler)
 
-    if args.algo == 'a2c':
-        agent = algo.A2C_ACKTR(
-            actor_critic,
-            args.value_loss_coef,
-            args.entropy_coef,
-            lr=args.lr,
-            eps=args.eps,
-            alpha=args.alpha,
-            max_grad_norm=args.max_grad_norm)
-    elif args.algo == 'ppo':
+    if args.algo == 'ppo':
         agent = algo.PPO(
             actor_critic,
             args.clip_param,
@@ -162,68 +137,50 @@ def main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm)
-    elif args.algo == 'acktr':
-        agent = algo.A2C_ACKTR(
-            actor_critic, args.value_loss_coef, args.entropy_coef, acktr=True)
-
-    if args.gail:
-        assert len(envs.observation_space.shape) == 1
-
-        # TODO: s1 is just s0 shifted by 1 in time.
-        expert_s0, expert_a0, expert_s1 = gan_utils.load_feat_sas_from_pickle(
-            args.gail_traj_path,
-            downsample_freq=int(args.gail_downsample_frequency),
-            load_num_trajs=args.gail_traj_num
-        )
-
-        s_dim = expert_s0.shape[1]
-        a_dim = expert_a0.shape[1]
-
-        if not args.gail_dyn:
-            assert s_dim == envs.observation_space.shape[0]
-            assert a_dim == envs.action_space.shape[0]
-        # else:
-        # s_dim is s_feat_dim, the following not ture anymore
-        # assert s_dim + a_dim == envs.observation_space.shape[0]
-
-        if not args.gail_dyn:
-            discr = gail.Discriminator(
-                s_dim + a_dim, args.gail_dis_hdim,
-                device)
-        else:
-            # learning dyn gail
-            discr = gail.Discriminator(
-                s_dim + a_dim + s_dim, args.gail_dis_hdim,
-                device)
-
-        if not args.gail_dyn:
-            expert_dataset = TensorDataset(Tensor(expert_s0), Tensor(expert_a0))
-        else:
-            # learning dyn gail
-            expert_s0a0 = np.concatenate((expert_s0, expert_a0), axis=1)
-            expert_dataset = TensorDataset(Tensor(expert_s0a0), Tensor(expert_s1))
-
-        drop_last = len(expert_dataset) > args.gail_batch_size
-        gail_train_loader = DataLoader(
-            expert_dataset,
-            batch_size=args.gail_batch_size,
-            shuffle=True,
-            drop_last=drop_last)
     else:
-        discr = None
-        gail_train_loader = None
+        raise ValueError("only support PPO in gail dyn")
+
+    assert len(envs.observation_space.shape) == 1
+
+    expert_sas_w_past = gan_utils.load_sas_wpast_from_pickle(
+        args.gail_traj_path,
+        downsample_freq=int(args.gail_downsample_frequency),
+        load_num_trajs=args.gail_traj_num
+    )
+    # assume in the order of s_old,..., a_old,..., st+1
+    s_dim = expert_sas_w_past[-1].shape[1]
+    a_dim = expert_sas_w_past[-2].shape[1]
+
+    # TODO: hardcoded here
+    s_idx = np.array([0, 3])
+    a_idx = np.array([0, 3])
+    # s_idx = np.array([0])
+    # a_idx = np.array([0])
+
+    info_length = len(s_idx) * s_dim + len(a_idx) * a_dim + s_dim       # last term s_t+1
+    discr = gail.Discriminator(
+        info_length, args.gail_dis_hdim,
+        device)
+    expert_merged_sas = gan_utils.select_and_merge_sas(expert_sas_w_past, a_idx=a_idx, s_idx=s_idx)
+    assert expert_merged_sas.shape[1] == info_length
+    expert_dataset = TensorDataset(Tensor(expert_merged_sas))
+
+    drop_last = len(expert_dataset) > args.gail_batch_size
+    gail_train_loader = DataLoader(
+        expert_dataset,
+        batch_size=args.gail_batch_size,
+        shuffle=True,
+        drop_last=drop_last)
 
     obs = envs.reset()
-    obs_feat = gan_utils.replace_obs_with_feat(obs, args.cuda, feat_select_func, return_tensor=True)
-    feat_len = obs_feat.size(1)  # TODO: multi-dim obs broken
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size,
-                              feat_len)
-
+                              info_length)
+    # reset does not have info dict, but is okay,
+    # and keep rollouts.obs_feat[0] 0, will not be used, insert from 1 (for backward compact)
     rollouts.obs[0].copy_(obs)
-    rollouts.obs_feat[0].copy_(obs_feat)
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10000)
@@ -254,12 +211,16 @@ def main():
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
-            obs_feat = gan_utils.replace_obs_with_feat(obs, args.cuda, feat_select_func, return_tensor=True)
 
-            for info in infos:
+            sas_feat = np.zeros((args.num_processes, info_length))
+            for core_idx, info in enumerate(infos):
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
+                # get the past info here and apply filter
+                sas_info = info["sas_window"]
+                sas_feat[core_idx, :] = gan_utils.select_and_merge_sas(sas_info, s_idx=s_idx, a_idx=a_idx)
 
+            # print(sas_feat)
             # If done then clean the history of observations.
             masks = Tensor(
                 [[0.0] if done_ else [1.0] for done_ in done])
@@ -267,7 +228,7 @@ def main():
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, reward, masks, bad_masks, obs_feat)
+                            action_log_prob, value, reward, masks, bad_masks, Tensor(sas_feat))
 
         with torch.no_grad():
             next_value = actor_critic.get_value(
@@ -275,55 +236,49 @@ def main():
                 rollouts.masks[-1]).detach()
 
         gail_loss, gail_loss_e, gail_loss_p = None, None, None
-        if args.gail:
-            # TODO: odd. turn this off for now since no state normalize
-            # if j >= 10:
-            #     envs.venv.eval()
+        gail_epoch = args.gail_epoch
 
-            gail_epoch = args.gail_epoch
-            # if j < 10:
-            #     gail_epoch = 100  # TODO: Warm up
+        # TODO: odd. turn this off for now since no state normalize
+        # if j >= 10:
+        #     envs.venv.eval()
+        # Warm up
+        # if j < 10:
+        #     gail_epoch = 100
 
-            for _ in range(gail_epoch):
-                gail_loss, gail_loss_e, gail_loss_p = discr.update(gail_train_loader, rollouts,
-                                                                   utils.get_vec_normalize(envs)._obfilt,
-                                                                   args.gail_dyn, a_dim)  # TODO
+        # use next obs feat batch during update...
+        for _ in range(gail_epoch):
+            gail_loss, gail_loss_e, gail_loss_p = discr.update_gail_dyn(gail_train_loader, rollouts)
 
-            num_of_dones = (1.0 - rollouts.masks).sum().cpu().numpy() \
-                + args.num_processes / 2
-            # print(num_of_dones)
-            num_of_expert_dones = (args.num_steps * args.num_processes) / args.gail_tar_length
-            # print(num_of_expert_dones)
+        num_of_dones = (1.0 - rollouts.masks).sum().cpu().numpy() \
+            + args.num_processes / 2
+        # print(num_of_dones)
+        num_of_expert_dones = (args.num_steps * args.num_processes) / args.gail_tar_length
+        # print(num_of_expert_dones)
 
-            # d_sa < 0.5 if pi too short (too many pi dones),
-            # d_sa > 0.5 if pi too long
-            d_sa = 1 - num_of_dones / (num_of_dones + num_of_expert_dones)
-            # print(d_sa)
-            r_sa = np.log(d_sa) - np.log(1 - d_sa)  # d->1, r->inf
+        # d_sa < 0.5 if pi too short (too many pi dones),
+        # d_sa > 0.5 if pi too long
+        d_sa = 1 - num_of_dones / (num_of_dones + num_of_expert_dones)
+        # print(d_sa)
+        r_sa = np.log(d_sa) - np.log(1 - d_sa)  # d->1, r->inf
 
-            # overwriting rewards by gail
-            if not args.gail_dyn:
-                for step in range(args.num_steps):
-                    rollouts.rewards[step], returns = discr.predict_reward(
-                        rollouts.obs[step], rollouts.actions[step], args.gamma,
-                        rollouts.masks[step])
-            else:
-                for step in range(args.num_steps):
-                    cur_obs_a = rollouts.obs[step, :, -a_dim:]  # second dim is num_proc
-                    cur_obs_feat_a = torch.cat((rollouts.obs_feat[step], cur_obs_a), 1)
-                    rollouts.rewards[step], returns = discr.predict_reward(
-                        cur_obs_feat_a, rollouts.obs_feat[step + 1], args.gamma,
-                        rollouts.masks[step], offset=-r_sa)
+        # use next obs feat to overwrite reward...
+        # overwriting rewards by gail
+        for step in range(args.num_steps):
+            rollouts.rewards[step], returns = \
+                discr.predict_reward_combined(
+                    rollouts.obs_feat[step + 1], args.gamma,
+                    rollouts.masks[step], offset=-r_sa
+                )
 
-                    # redo reward normalize after overwriting
-                    # print(rollouts.rewards[step], returns)
-                    ret_rms.update(returns.view(-1).cpu().numpy())
-                    rews = rollouts.rewards[step].view(-1).cpu().numpy()
-                    rews = np.clip(rews / np.sqrt(ret_rms.var + 1e-7),
-                                   -10.0, 10.0)
-                    # print(ret_rms.var)    # just one number
-                    rollouts.rewards[step] = Tensor(rews).view(-1, 1)
-                    # print("after", rollouts.rewards[step], returns)
+            # redo reward normalize after overwriting
+            # print(rollouts.rewards[step], returns)
+            ret_rms.update(returns.view(-1).cpu().numpy())
+            rews = rollouts.rewards[step].view(-1).cpu().numpy()
+            rews = np.clip(rews / np.sqrt(ret_rms.var + 1e-7),
+                           -10.0, 10.0)
+            # print(ret_rms.var)    # just one number
+            rollouts.rewards[step] = Tensor(rews).view(-1, 1)
+            # print("after", rollouts.rewards[step], returns)
 
             # final returns
             # print(returns)

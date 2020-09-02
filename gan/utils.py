@@ -18,6 +18,7 @@ import gzip, pickle, pickletools
 import joblib
 import os
 import pybullet
+from collections import deque
 
 
 def load(policy_dir: str, env_name: str, is_cuda: bool, iter_num=None):
@@ -164,6 +165,94 @@ def load_feat_sas_from_pickle(pathname, downsample_freq=1, load_num_trajs=None):
     print(np.array(s_next).shape)
 
     return np.array(s), np.array(a), np.array(s_next)
+
+
+def load_sas_wpast_from_pickle(pathname, downsample_freq=1, load_num_trajs=None):
+    # if load_num_trajs None, load all trajs
+    with open(pathname, "rb") as handle:
+        saved_file = pickle.load(handle)
+
+    n_trajs = len(saved_file)
+    # See https://github.com/pytorch/pytorch/issues/14886
+    # .long() for fixing bug in torch v0.4.1
+    start_idx = torch.randint(
+        0, downsample_freq, size=(n_trajs,)).long()
+
+    sas = []
+    for traj_idx, traj_tuples in saved_file.items():
+        sas.extend(traj_tuples[start_idx[traj_idx]::downsample_freq])  # downsample the rows
+        if load_num_trajs and traj_idx >= load_num_trajs - 1:
+            break
+
+    # N*21 sas, each element is a list,
+    # assume 21 has the order of s_-9~0, a_-9~0, then s1
+
+    all_info = []
+    for item in range(np.array(sas).shape[1]):
+        # each element in all_info is a 2D np matrix, N*l, l is length of s or a
+        s_or_a = list(np.array(sas)[:, item])
+        all_info.append(np.array(s_or_a))
+        print(np.array(s_or_a).shape)
+
+    return all_info
+
+
+def select_and_merge_sas(sas, s_idx=np.array([0,]), a_idx=np.array([0,])):
+    # sas is a list of lists/nparray
+    # each element being either a single length-l s/a list, or a N*l s/a array
+    # return N*combined_length matrix or combined_length, vector
+
+    is_one_dim = False
+    if np.array(sas[0]).ndim == 1:
+        is_one_dim = True
+        sas_copy = []
+        for sas_elem in sas:
+            sas_elem = np.array([sas_elem])     # add one dimension
+            sas_copy.append(sas_elem)
+    else:
+        sas_copy = sas.copy()
+
+    assert np.array(sas_copy[-1]).ndim == 2
+
+    len_time_win = (len(sas) - 1) // 2      # half old s, half old a, next s
+    # print("past s/a t-window length", len_time_win)
+
+    merged_sas = np.array([]).reshape((sas_copy[0].shape[0], 0))   # N*0
+
+    for i in s_idx:
+        merged_sas = np.concatenate((merged_sas, sas_copy[i]), axis=1)
+    for j in a_idx:
+        merged_sas = np.concatenate((merged_sas, sas_copy[len_time_win + j]), axis=1)
+    merged_sas = np.concatenate((merged_sas, sas_copy[-1]), axis=1)      # s_t+1 always there
+
+    merged_sas = merged_sas[0, :] if is_one_dim else merged_sas
+    # print(merged_sas[:10,:])
+    return merged_sas
+
+
+def select_and_merge_from_s_a(s_mt, a_mt, s_idx=np.array([0,]), a_idx=np.array([])):
+    # s_mt and a_mt are two lists of lists
+    # each element being either a single length-l s/a list
+    # return a combined_length, vector
+
+    merged_sa = np.array([])
+    for i in s_idx:
+        merged_sa = np.concatenate((merged_sa, s_mt[i]))
+    for j in a_idx:
+        merged_sa = np.concatenate((merged_sa, a_mt[j]))
+
+    return merged_sa
+
+
+def push_recent_value(deque_d, value):
+    max_len = deque_d.maxlen
+    if len(deque_d) == 0:
+        # pad init obs max_len times
+        for i in range(max_len):
+            deque_d.appendleft(list(value))
+    else:
+        # update and pop right the oldest one
+        deque_d.appendleft(list(value))
 
 
 def get_link_com_xyz_orn(body_id, link_id, bullet_session):

@@ -117,12 +117,12 @@ parser.add_argument(
 #     default=0,
 #     help="whether to load gail discriminator for debugging",
 # )
-parser.add_argument(
-    "--enlarge-act-range",
-    type=float,
-    default=0.15,
-    help="add white noise to action during rollout",
-)
+# parser.add_argument(
+#     "--enlarge-act-range",
+#     type=float,
+#     default=0.15,
+#     help="add white noise to action during rollout",
+# )
 parser.add_argument(
     "--non-det",
     type=int,
@@ -233,11 +233,11 @@ while True:
             obs, recurrent_hidden_states, masks, deterministic=args.det
         )
 
-        # TODO, name duplicate
-        # TODO parameter space noise
-        # xx% noise before tanh
-        action += (torch.rand(action.size()).to(device) - 0.5) * (args.enlarge_act_range * 2)
-        # print(action)
+        # # TODO, name duplicate
+        # # TODO parameter space noise
+        # # xx% noise before tanh
+        # action += (torch.rand(action.size()).to(device) - 0.5) * (args.enlarge_act_range * 2)
+        # # print(action)
 
     # if args.save_traj:
     #     tuple_sas = []

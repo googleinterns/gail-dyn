@@ -46,6 +46,8 @@ class LaikagoBulletEnvV4(gym.Env):
                  dq_pen_weight=0.001,
                  vel_r_weight=4.0,
 
+                 enlarge_act_range=0.0,     # during data collection, make pi softer
+
                  soft_floor_env=False,
                  low_power_env=False,
                  randomization_train=False,
@@ -66,6 +68,8 @@ class LaikagoBulletEnvV4(gym.Env):
         self.q_pen_weight = q_pen_weight
         self.dq_pen_weight = dq_pen_weight
         self.vel_r_weight = vel_r_weight
+
+        self.enlarge_act_range = enlarge_act_range
 
         self.soft_floor_env = soft_floor_env
         self.low_power_env = low_power_env
@@ -90,7 +94,7 @@ class LaikagoBulletEnvV4(gym.Env):
         self.floor_id = None
         self.velx = 0
 
-        self.w_past_obs = [0, 3, 6, 9]  # t-3. t-6. t-9
+        self.behavior_past_obs_t_idx = [0, 3, 6, 9]  # t-3. t-6. t-9
         self.past_obs_array = deque(maxlen=10)
         self.past_act_array = deque(maxlen=10)
 
@@ -201,10 +205,14 @@ class LaikagoBulletEnvV4(gym.Env):
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
         x_0 = root_pos[0]
 
+        # TODO: parameter space noise.
+        # make pi softer during data collection, different from hidden act_noise below
+        # print(self.enlarge_act_range)
+        a = utils.perturb(a, self.enlarge_act_range, self.np_random)
         a = np.tanh(a)
 
-        # push in deque the a after tanh
-        self.push_recent_value(self.past_act_array, a)
+        # ***push in deque the a after tanh
+        utils.push_recent_value(self.past_act_array, a)
 
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
@@ -241,7 +249,7 @@ class LaikagoBulletEnvV4(gym.Env):
                                                                     self._p)
             self._p.stepSimulation()
             if self.render:
-                time.sleep(self._ts * 0.5)
+                time.sleep(self._ts * 1.0)
             self.timer += 1
 
         root_pos, _ = self.robot.get_link_com_xyz_orn(-1)
@@ -296,7 +304,7 @@ class LaikagoBulletEnvV4(gym.Env):
         # print("dev pen", -y_1*0.5)
         height = root_pos[2]
 
-        in_support = self.robot.is_root_com_in_support()
+        # in_support = self.robot.is_root_com_in_support()
         # print("______")
         # print(in_support)
 
@@ -322,7 +330,7 @@ class LaikagoBulletEnvV4(gym.Env):
         return obs, reward, not not_done, {"sas_window": past_info}
 
     def construct_past_traj_window(self):
-        # st-9, ... st, at-9, ..., at
+        # st, ... st-9, at, ..., at-9
         # call this before s_t+1 enters deque
         # order does not matter as long as it is the same in policy & expert batch
         # print(list(self.past_obs_array) + list(self.past_act_array))
@@ -340,27 +348,23 @@ class LaikagoBulletEnvV4(gym.Env):
         if self.obs_noise:
             obs = utils.perturb(obs, 0.1, self.np_random)
 
-        self.push_recent_value(self.past_obs_array, obs)
+        utils.push_recent_value(self.past_obs_array, obs)
 
         # print(obs[-4:])
 
-        obs_all = []
-        list_past_obs = list(self.past_obs_array)
-        for t_idx in self.w_past_obs:
-            obs_all.extend(list_past_obs[t_idx])
+        # obs_all = []
+        # list_past_obs = list(self.past_obs_array)
+        # for t_idx in self.behavior_past_obs_t_idx:
+        #     obs_all.extend(list_past_obs[t_idx])
 
-        return obs_all
+        obs_all = utils.select_and_merge_from_s_a(
+            s_mt=list(self.past_obs_array),
+            a_mt=list(self.past_act_array),
+            s_idx=self.behavior_past_obs_t_idx,
+            a_idx=np.array([])
+        )
 
-    @staticmethod
-    def push_recent_value(deque_d, value):
-        max_len = deque_d.maxlen
-        if len(deque_d) == 0:
-            # pad init obs max_len times
-            for i in range(max_len):
-                deque_d.appendleft(list(value))
-        else:
-            # update and pop right the oldest one
-            deque_d.appendleft(list(value))
+        return list(obs_all)
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)

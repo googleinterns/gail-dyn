@@ -260,7 +260,7 @@ while True:
     list_r_per_step.append(reward)
 
     if args.save_traj:
-        past_sa = info[0]["past_info"]      # odd 0, why wrap info to a list
+        sas_window = info[0]["sas_window"]      # odd 0, why wrap info to a list
 
         # tuple_sas.append(list(unwrap(action, is_cuda=is_cuda)))
         #
@@ -269,8 +269,8 @@ while True:
 
         next_obs = list(unwrap(obs, is_cuda=is_cuda))
 
-        # print(past_sa + [next_obs])
-        cur_traj.append(past_sa + [next_obs])
+        # print(sas_window)
+        cur_traj.append(sas_window)
 
     # if args.load_dis:
     #     dis_action = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)

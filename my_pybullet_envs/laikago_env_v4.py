@@ -317,10 +317,12 @@ class LaikagoBulletEnvV4(gym.Env):
         # not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
-        return obs, reward, not not_done, {"past_info": past_info}
+        past_info += [self.past_obs_array[0]]       # s_t+1
+
+        return obs, reward, not not_done, {"sas_window": past_info}
 
     def construct_past_traj_window(self):
-        # st-10, ... st, at-10, ..., at
+        # st-9, ... st, at-9, ..., at
         # call this before s_t+1 enters deque
         # order does not matter as long as it is the same in policy & expert batch
         # print(list(self.past_obs_array) + list(self.past_act_array))

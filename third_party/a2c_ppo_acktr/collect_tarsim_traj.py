@@ -260,7 +260,7 @@ while True:
     list_r_per_step.append(reward)
 
     if args.save_traj:
-        sas_window = info[0]["sas_window"]      # odd 0, why wrap info to a list
+        sas_window = info[0]["sas_window"]      # info[0] because 1-core dummy vec env.
 
         # tuple_sas.append(list(unwrap(action, is_cuda=is_cuda)))
         #

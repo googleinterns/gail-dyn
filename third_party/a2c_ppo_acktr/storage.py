@@ -30,7 +30,7 @@ def _flatten_helper(T, N, _tensor):
 
 class RolloutStorage(object):
     def __init__(self, num_steps, num_processes, obs_shape, action_space,
-                 recurrent_hidden_state_size, feat_len):
+                 recurrent_hidden_state_size, feat_len=0):
         self.obs = torch.zeros(num_steps + 1, num_processes, *obs_shape)
         self.obs_feat = torch.zeros(num_steps + 1, num_processes, feat_len)
         self.recurrent_hidden_states = torch.zeros(
@@ -68,9 +68,10 @@ class RolloutStorage(object):
         self.bad_masks = self.bad_masks.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards, masks, bad_masks, obs_feat):
+               value_preds, rewards, masks, bad_masks, obs_feat=None):
         self.obs[self.step + 1].copy_(obs)
-        self.obs_feat[self.step + 1].copy_(obs_feat)
+        if obs_feat is not None:
+            self.obs_feat[self.step + 1].copy_(obs_feat)
         self.recurrent_hidden_states[self.step +
                                      1].copy_(recurrent_hidden_states)
         self.actions[self.step].copy_(actions)

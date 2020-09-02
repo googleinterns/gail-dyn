@@ -307,7 +307,7 @@ class LaikagoConFEnvV3(gym.Env):
 
         for _ in range(self.control_skip):
             self.robot.apply_action(robo_action)
-            self.apply_scale_clip_conf_from_pi(env_action)
+            self.apply_scale_clip_conf_from_pi_new(env_action)
             self._p.stepSimulation()
             if self.render:
                 time.sleep(self._ts * 0.5)

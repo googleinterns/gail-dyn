@@ -476,10 +476,65 @@ this is not only downsample then, but also using tiny batch size to update
 
 # figs to add
 1. overfitting or extrapolating: test/reset on hold out trajs (can be done with Env v1)
-    Error on policy generated trajs vs. error on expert trajs.
+    Error on generator traj tuples (0.34) vs. error on expert traj tuples (0.31) (both with given behavior pi)
+    error on fine-tuned policy trajs:
+        generator @ iter 0 (i.e. behavior pi itself) 0.34
+        generator @ iter 20 0.35;
+        @ iter 40 0.38;
+        @ iter 60 0.4
+    Generator @ another behavior policy     ~0.5
+    Source env @ behavior policy ~0.15
 
 2. scatter plot of actuator net output
-3. 4 videos (add 1)
+3. 4 videos for new soft floor
+
+5. a comparision with old soft floor
+6. action space matters...
+
 
 # TODO: maybe use tanh to clip??
 # TODO: maybe plot episode length / task reward distribution
+
+
+so instead of worrying about distribution shift problem (which might be true)
+we need to first find a good metric to show that it is a problem.
+
+
+A new way to do multi-step:
+Just make G/D/B input to be all multi-step (without dq)
+if multi-step, all s_t simply without dq should be fine
+
+B (s_t-9, s_t-6, st-3, s_t) -> a_t
+
+G (s_t-9, s_t-6, st-3, s_t, a_t) -> f
+*what would be the benefit for G to take in multi-step, besides just for dq (partial obs)?
+*if we want to compensate previous f errors, should also have a_t-i there.
+    - otherwise how do you tell if it is indeed f error, not a changed?
+* so maybe leave G unchanged for now.
+
+D (s_t, a_t, s_t+1)
+==>
+D (s_t-9, s_t-6, st-3, s_t, a_t, s_t+1)
+
+# general way:
+just store all of (st,at) of 9,6,3,0 & st+1
+and have some options to vary the subset we choose to input to G & D
+
+conf_policy_env takes in input for either B or G
+    so appending all (s,a) to G would be easy
+    throw away some s or a seems also simple with another idx selection array
+
+What is the best way to provide data to Dis?
+    the filter for D or G might be different...
+    could get from "info" dict (when return t+1 obs, also return t+1 info (for t))
+    "info" include all the (s,a) and s_t+1, then just need a filter func for D (expert & policy).
+        can defer applying this filter until before gailD input
+        define this func - maybe in utils.
+    add to storage
+
+
+*****Store action after tanh (-1,1)
+
+# TODO: with the new action space for conf, maybe add 1,0 contact bit back..
+
+

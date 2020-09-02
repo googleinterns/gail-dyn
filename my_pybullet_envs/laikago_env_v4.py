@@ -92,6 +92,7 @@ class LaikagoBulletEnvV4(gym.Env):
 
         self.w_past_obs = [0, 3, 6, 9]  # t-3. t-6. t-9
         self.past_obs_array = deque(maxlen=10)
+        self.past_act_array = deque(maxlen=10)
 
         self.reset_const = 100
         self.reset_counter = self.reset_const    # do a hard reset first
@@ -107,7 +108,7 @@ class LaikagoBulletEnvV4(gym.Env):
         obs_dummy = np.array([1.12234567] * self.obs_dim)
         self.observation_space = gym.spaces.Box(low=-np.inf * obs_dummy, high=np.inf * obs_dummy)
 
-        self.b2d_feat_select = self.feature_selection_B2D_laika_v3
+        # self.b2d_feat_select = self.feature_selection_B2D_laika_v3
 
     def reset(self):
 
@@ -167,7 +168,7 @@ class LaikagoBulletEnvV4(gym.Env):
             self.init_state = self._p.saveState()
 
         if self.low_power_env:
-            # # for pi51 (52)
+            # # for pi51, 53 (52)
             self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
@@ -189,6 +190,7 @@ class LaikagoBulletEnvV4(gym.Env):
 
         self.timer = 0
         self.past_obs_array.clear()
+        self.past_act_array.clear()
 
         obs = self.get_extended_observation()
 
@@ -200,6 +202,10 @@ class LaikagoBulletEnvV4(gym.Env):
         x_0 = root_pos[0]
 
         a = np.tanh(a)
+
+        # push in deque the a after tanh
+        self.push_recent_value(self.past_act_array, a)
+
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
 
@@ -213,8 +219,9 @@ class LaikagoBulletEnvV4(gym.Env):
         #     max_force_ratio = np.clip(2 - dq/2., 0, 1)
         #     a *= max_force_ratio
 
+        past_info = self.construct_past_traj_window()
+
         for _ in range(self.control_skip):
-            # action is in not -1,1
             if a is not None:
                 self.act = a
                 self.robot.apply_action(a)
@@ -310,7 +317,14 @@ class LaikagoBulletEnvV4(gym.Env):
         # not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
         # not_done = True
 
-        return obs, reward, not not_done, {}
+        return obs, reward, not not_done, {"past_info": past_info}
+
+    def construct_past_traj_window(self):
+        # st-10, ... st, at-10, ..., at
+        # call this before s_t+1 enters deque
+        # order does not matter as long as it is the same in policy & expert batch
+        # print(list(self.past_obs_array) + list(self.past_act_array))
+        return list(self.past_obs_array) + list(self.past_act_array)
 
     def get_dist(self):
         return self.robot.get_link_com_xyz_orn(-1)[0][0]
@@ -324,13 +338,7 @@ class LaikagoBulletEnvV4(gym.Env):
         if self.obs_noise:
             obs = utils.perturb(obs, 0.1, self.np_random)
 
-        if len(self.past_obs_array) == 0:
-            # pad init obs 10 times
-            for i in range(10):
-                self.past_obs_array.appendleft(obs)
-        else:
-            # update and pop right the oldest one
-            self.past_obs_array.appendleft(obs)
+        self.push_recent_value(self.past_obs_array, obs)
 
         # print(obs[-4:])
 
@@ -340,6 +348,17 @@ class LaikagoBulletEnvV4(gym.Env):
             obs_all.extend(list_past_obs[t_idx])
 
         return obs_all
+
+    @staticmethod
+    def push_recent_value(deque_d, value):
+        max_len = deque_d.maxlen
+        if len(deque_d) == 0:
+            # pad init obs max_len times
+            for i in range(max_len):
+                deque_d.appendleft(list(value))
+        else:
+            # update and pop right the oldest one
+            deque_d.appendleft(list(value))
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -358,23 +377,23 @@ class LaikagoBulletEnvV4(gym.Env):
         distance -= root_pos[1]
         self._p.resetDebugVisualizerCamera(distance, yaw, -20, [root_pos[0], 0.0, 0.4])
 
-    @staticmethod
-    def feature_selection_B2D_laika_v3(full_obs):
-        # assume for now that Behavior and Dis share same features (thus length)
-        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12)     # v3 no normal forces
-        feature = list(full_obs)
-        return feature
-
-    @staticmethod
-    def feature_selection_G2BD_laika_v3(full_obs):
-        # assume for now that Behavior and Dis share same features (thus length)
-        # and that G is longer (with dqs)
-
-        # G obs with behavior action or not
-        assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12) \
-            or len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12 + 12)
-
-        length = 1 + 9 + 3 + 12 + 12
-        re = list(full_obs[:length])
-        # print(len(re))
-        return re
+    # @staticmethod
+    # def feature_selection_B2D_laika_v3(full_obs):
+    #     # assume for now that Behavior and Dis share same features (thus length)
+    #     assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12)     # v3 no normal forces
+    #     feature = list(full_obs)
+    #     return feature
+    #
+    # @staticmethod
+    # def feature_selection_G2BD_laika_v3(full_obs):
+    #     # assume for now that Behavior and Dis share same features (thus length)
+    #     # and that G is longer (with dqs)
+    #
+    #     # G obs with behavior action or not
+    #     assert len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12) \
+    #         or len(list(full_obs)) == (1 + 9 + 3 + 12 + 12 + 3 + 12 + 12)
+    #
+    #     length = 1 + 9 + 3 + 12 + 12
+    #     re = list(full_obs[:length])
+    #     # print(len(re))
+    #     return re

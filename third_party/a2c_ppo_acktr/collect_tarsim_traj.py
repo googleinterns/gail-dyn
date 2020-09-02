@@ -111,12 +111,12 @@ parser.add_argument(
     default="./tmp.pkl",
     help="where the traj tuples are stored",
 )
-parser.add_argument(
-    "--load-dis",
-    type=int,
-    default=0,
-    help="whether to load gail discriminator for debugging",
-)
+# parser.add_argument(
+#     "--load-dis",
+#     type=int,
+#     default=0,
+#     help="whether to load gail discriminator for debugging",
+# )
 parser.add_argument(
     "--enlarge-act-range",
     type=float,
@@ -172,24 +172,15 @@ env = make_vec_envs(
 # dont know why there are so many wrappers in make_vec_envs...
 env_core = env.venv.venv.envs[0].env.env
 
-try:
-    # feat_select_func = env_core.robot.feature_selection_all_laika
-    # feat_select_func = env_core.robot.feature_selection_laika
-    # feat_select_func = env_core.robot.feature_selection_withq_laika
-    feat_select_func = env_core.b2d_feat_select
-except:
-    print("feat select not found!!!!!!!!!!!")
-    feat_select_func = None
-
 if args.src_env_name == "":
     env_name_transfer = args.env_name
 else:
     env_name_transfer = args.src_env_name
 actor_critic, ob_rms, recurrent_hidden_states, masks \
     = load(args.load_dir, env_name_transfer, is_cuda, args.iter)
-discri = None
-if args.load_dis:
-    discri = load_gail_discriminator(args.load_dir, env_name_transfer, is_cuda, args.iter)
+# discri = None
+# if args.load_dis:
+#     discri = load_gail_discriminator(args.load_dir, env_name_transfer, is_cuda, args.iter)
 
 if ob_rms:
     print(ob_rms.mean)
@@ -222,9 +213,9 @@ last_dist = 0
 dis_probs_imaginary = None
 dis_probs_real = None
 dxs = []
-if args.load_dis:
-    dis_probs_imaginary = []
-    dis_probs_real = []
+# if args.load_dis:
+#     dis_probs_imaginary = []
+#     dis_probs_real = []
 
 while True:
     # try:
@@ -243,56 +234,64 @@ while True:
         )
 
         # TODO, name duplicate
-        # 25% noise if a clipped to -1, 1
+        # TODO parameter space noise
+        # xx% noise before tanh
         action += (torch.rand(action.size()).to(device) - 0.5) * (args.enlarge_act_range * 2)
         # print(action)
 
-    if args.save_traj:
-        tuple_sas = []
-        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
-        tuple_sas.append(obs_feat[0])   # only one process env
+    # if args.save_traj:
+    #     tuple_sas = []
+    #     obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
+    #     tuple_sas.append(obs_feat[0])   # only one process env
+    #
+    #     # save clamped action (note: dyn envs might have action larger than 1)
+    #     action = action.clamp(-1., 1)
+    # print("obs", obs)
+    # print("act", torch.tanh(action))
 
-        # save clamped action (note: dyn envs might have action larger than 1)
-        action = action.clamp(-1., 1)
 
-    if args.load_dis:
-        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
-        dis_state = torch.cat((obs_feat, obs[:, env_core.behavior_obs_len:]), 1)
+
+    # if args.load_dis:
+    #     obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
+    #     dis_state = torch.cat((obs_feat, obs[:, env_core.behavior_obs_len:]), 1)
+
     # Obser reward and next obs
-    obs, reward, done, _ = env.step(action)
+    obs, reward, done, info = env.step(action)
     list_r_per_step.append(reward)
 
     if args.save_traj:
-        # print("action", action)
-        # print("obs", obs)
-        tuple_sas.append(list(unwrap(action, is_cuda=is_cuda)))
+        past_sa = info[0]["past_info"]      # odd 0, why wrap info to a list
 
-        obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
-        tuple_sas.append(obs_feat[0])
+        # tuple_sas.append(list(unwrap(action, is_cuda=is_cuda)))
+        #
+        # obs_feat = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=False)
+        # tuple_sas.append(obs_feat[0])
 
-        # print(tuple_sas)
-        cur_traj.append(tuple_sas)
+        next_obs = list(unwrap(obs, is_cuda=is_cuda))
 
-    if args.load_dis:
-        dis_action = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
-        dis_r = discri.predict_prob_single_step(dis_state, dis_action)
-        dis_probs_real.append(unwrap(dis_r, is_cuda=is_cuda))
+        # print(past_sa + [next_obs])
+        cur_traj.append(past_sa + [next_obs])
+
+    # if args.load_dis:
+    #     dis_action = replace_obs_with_feat(obs, is_cuda, feat_select_func, return_tensor=True)
+    #     dis_r = discri.predict_prob_single_step(dis_state, dis_action)
+    #     dis_probs_real.append(unwrap(dis_r, is_cuda=is_cuda))
 
         # if len(dis_probs_real)>20 and np.mean(dis_probs_real[-20:]) < 0.4:
         #     done = True
         #     env.reset()
 
-        try:
-            obs_i = env_core.return_imaginary_obs()
-            dis_action = obs_i[:env_core.behavior_obs_len]      # dis action is next state
-            dis_action = wrap(dis_action, is_cuda=is_cuda)
-            dis_action = replace_obs_with_feat(dis_action, is_cuda, feat_select_func, return_tensor=True)
-            dis_r = discri.predict_prob_single_step(dis_state, dis_action)
-            dis_probs_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
-        except:
-            pass
+        # try:
+        #     obs_i = env_core.return_imaginary_obs()
+        #     dis_action = obs_i[:env_core.behavior_obs_len]      # dis action is next state
+        #     dis_action = wrap(dis_action, is_cuda=is_cuda)
+        #     dis_action = replace_obs_with_feat(dis_action, is_cuda, feat_select_func, return_tensor=True)
+        #     dis_r = discri.predict_prob_single_step(dis_state, dis_action)
+        #     dis_probs_imaginary.append(unwrap(dis_r, is_cuda=is_cuda))
+        # except:
+        #     pass
 
-    dxs.append(env_core.get_ave_dx())
+    # dxs.append(env_core.get_ave_dx())
 
     try:
         env_core.cam_track_torso_link()
@@ -325,16 +324,16 @@ while True:
             all_trajs[cur_traj_idx] = cur_traj
             cur_traj = []
 
-        if args.load_dis:
-            print(
-                f"{np.array(dis_probs_real).mean()}\t"
-            )
-            # plot_avg_dis_prob_2(args, dis_probs_imaginary, dis_probs_real, list_r_per_step)
-            dis_probs_imaginary = []
-            dis_probs_real = []
-        else:
-            # plot_avg_dis_prob(args, list_r_per_step, dxs)
-            pass
+        # if args.load_dis:
+        #     print(
+        #         f"{np.array(dis_probs_real).mean()}\t"
+        #     )
+        #     # plot_avg_dis_prob_2(args, dis_probs_imaginary, dis_probs_real, list_r_per_step)
+        #     dis_probs_imaginary = []
+        #     dis_probs_real = []
+        # else:
+        #     # plot_avg_dis_prob(args, list_r_per_step, dxs)
+        #     pass
         list_r_per_step = []
         dxs = []
 
@@ -344,17 +343,6 @@ with open(args.save_path, "wb") as handle:
     # print(all_trajs)
     pickle.dump(all_trajs, handle, protocol=pickle.HIGHEST_PROTOCOL)
     # joblib.dump(all_trajs, handle)
-
-# import gzip, pickle, pickletools
-# with gzip.open(args.save_path, "wb") as f:
-#     pickled = pickle.dumps(all_trajs)
-#     optimized_pickle = pickletools.optimize(pickled)
-#     f.write(optimized_pickle)
-# f.close()
-
-# with open("old_hopper_r", "wb") as handle:
-#     print(list_rewards)
-#     pickle.dump(list_rewards, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 plt.hist(list_rewards, None, alpha=0.5, label='r hist')
 plt.legend(loc='upper right')

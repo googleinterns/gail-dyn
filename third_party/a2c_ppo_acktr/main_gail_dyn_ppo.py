@@ -246,6 +246,7 @@ def main():
         #     gail_epoch = 100
 
         # use next obs feat batch during update...
+        # if j % 2 == 0:
         for _ in range(gail_epoch):
             gail_loss, gail_loss_e, gail_loss_p = discr.update_gail_dyn(gail_train_loader, rollouts)
 

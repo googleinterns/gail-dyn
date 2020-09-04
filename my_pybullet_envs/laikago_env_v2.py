@@ -133,11 +133,11 @@ class LaikagoBulletEnvV2(gym.Env):
         #     # for ind in self.robot.feet:
         #         self._p.changeDynamics(self.robot.go_id, ind, contactDamping=damp, contactStiffness=stiff)
 
-        # if self.low_power_env:
-        #     # # TODO: for pi44
-        #     # self.robot.max_forces = [30.0] * 3 + [20.0] * 3 + [30.0] * 6
-        #     # TODO: for pi43
-        #     self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
+        if self.low_power_env:
+            # # TODO: for pi44
+            # self.robot.max_forces = [30.0] * 3 + [20.0] * 3 + [30.0] * 6
+            # TODO: for pi43
+            self.robot.max_forces = [30.0] * 3 + [15.0] * 3 + [30.0] * 6
 
         if self.randomization_train:
             damp = np.random.uniform(150.0, 1000.0)
@@ -172,15 +172,15 @@ class LaikagoBulletEnvV2(gym.Env):
         if self.act_noise:
             a = utils.perturb(a, 0.05, self.np_random)
 
-        if self.low_power_env:
-            # # TODO: for pi44
-            # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-            # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
-            # a *= max_force_ratio
-            # TODO: for pi43
-            _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
-            max_force_ratio = np.clip(2 - dq/2., 0, 1)
-            a *= max_force_ratio
+        # if self.low_power_env:
+        #     # # TODO: for pi44
+        #     # _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        #     # max_force_ratio = np.clip(2 - dq/2.5, 0, 1)
+        #     # a *= max_force_ratio
+        #     # TODO: for pi43
+        #     _, dq = self.robot.get_q_dq(self.robot.ctrl_dofs)
+        #     max_force_ratio = np.clip(2 - dq/2., 0, 1)
+        #     a *= max_force_ratio
 
         for _ in range(self.control_skip):
             # action is in not -1,1
@@ -290,7 +290,7 @@ class LaikagoBulletEnvV2(gym.Env):
 
         # for data collection
         # TODO
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0) and in_support
+        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
         # not_done = True
 
         return obs, reward, not not_done, {}

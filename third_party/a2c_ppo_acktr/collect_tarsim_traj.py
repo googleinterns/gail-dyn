@@ -344,6 +344,8 @@ with open(args.save_path, "wb") as handle:
     pickle.dump(all_trajs, handle, protocol=pickle.HIGHEST_PROTOCOL)
     # joblib.dump(all_trajs, handle)
 
-plt.hist(list_rewards, None, alpha=0.5, label='r hist')
+bins_list = np.arange(40) * 50.0
+print(bins_list)
+plt.hist(list_rewards, alpha=0.5, label='r hist', bins=bins_list)
 plt.legend(loc='upper right')
 plt.show()

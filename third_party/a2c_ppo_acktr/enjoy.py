@@ -356,6 +356,8 @@ with open(args.save_path, "wb") as handle:
 #     print(list_rewards)
 #     pickle.dump(list_rewards, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-plt.hist(list_rewards, None, alpha=0.5, label='r hist')
+bins_list = np.arange(40) * 50.0
+print(bins_list)
+plt.hist(list_rewards, alpha=0.5, label='r hist', bins=bins_list)
 plt.legend(loc='upper right')
 plt.show()

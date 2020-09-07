@@ -99,8 +99,9 @@ class LaikagoActFEnvV4(gym.Env):
         self.timer = 0
 
         self.behavior_past_obs_t_idx = [0, 3, 6, 9]  # t-3. t-6. t-9  (B does not take past a)
-        self.generator_past_obs_t_idx = [0, 3]       # TODO
-        self.generator_past_act_t_idx = [0, 3]
+        # self.behavior_past_obs_t_idx = [0]  # t-3. t-6. t-9  (B does not take past a)
+        self.generator_past_obs_t_idx = [0]       # TODO
+        self.generator_past_act_t_idx = [0]
 
         self.past_obs_array = deque(maxlen=10)
         self.past_bact_array = deque(maxlen=10)     # only need to store past behavior action
@@ -136,6 +137,8 @@ class LaikagoActFEnvV4(gym.Env):
 
         self.reset_const = 100
         self.reset_counter = self.reset_const  # do a hard reset first
+
+        # self.action_dim = 12
 
         self.init_state = None
         obs = self.reset()
@@ -380,7 +383,7 @@ class LaikagoActFEnvV4(gym.Env):
 
         # print("------")
         # conf policy will not have body-in-contact flag
-        not_done = (np.abs(dq) < 90).all() and (height > 0.3) and (height < 1.0)
+        not_done = (height > 0.3) and (height < 1.0)
         # not_done = (abs(y_1) < 5.0) and (height > 0.1) and (height < 1.0) and (rpy[2] > 0.1)
         # not_done = True
         #

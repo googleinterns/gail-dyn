@@ -32,7 +32,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 
 # this is called V4 because it shares same obs space with Laikago env V4
 # the robot is still Laikago V2 though, same as env V4
-class LaikagoConFEnvV4(gym.Env):
+class LaikagoConFEnvV4Split(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
     def __init__(self,
@@ -283,16 +283,16 @@ class LaikagoConFEnvV4(gym.Env):
             #                 a_idx=self.generator_past_act_t_idx
             #             )
 
-            # TODO: calculate 4x split obs here
-            obs_w_dq = self.robot.get_robot_observation(with_vel=True)
-            env_pi_obs = np.concatenate((obs_w_dq, robo_action))
+            # calculate 4x split obs here
+            env_pi_obs = self.get_all_feet_local_obs(robo_action)
+
             env_pi_obs_nn = utils.wrap(env_pi_obs, is_cuda=self.cuda_env)
             with torch.no_grad():
                 _, env_action_nn, _, self.recurrent_hidden_states = self.dyn_actor_critic.act(
                     env_pi_obs_nn, self.recurrent_hidden_states, self.masks, deterministic=False
                 )
             env_action = utils.unwrap(env_action_nn, is_cuda=self.cuda_env)
-        #
+        # TODO
         # env_action = np.tanh(env_action)
 
         # if self.ratio is None:
@@ -426,6 +426,29 @@ class LaikagoConFEnvV4(gym.Env):
     #     obs_i[:len(self.img_obs)] = self.img_obs
     #     return obs_i
 
+    def get_all_feet_local_obs(self, robo_action):
+
+        local_obs_all = []
+        for foot_ind, link in enumerate(self.robot.feet):
+            pos, quat = self.robot.get_link_com_xyz_orn(link, fk=1)
+            z_foot = pos[2]
+
+            rpy_foot = self._p.getEulerFromQuaternion(quat)
+
+            dxyz_foot = self._p.getLinkState(self.robot.go_id, link,
+                                             computeForwardKinematics=1,
+                                             computeLinkVelocity=1)[6]
+
+            q_this_leg, _ = self.robot.get_q_dq(self.robot.ctrl_dofs[foot_ind*3:(foot_ind*3+3)])
+
+            a_this_leg = robo_action[foot_ind*3:(foot_ind*3+3)]
+
+            local_obs = [z_foot] + list(rpy_foot) + list(dxyz_foot) + list(q_this_leg) + list(a_this_leg)
+
+            local_obs_all.extend(local_obs)
+            # print(local_obs)
+        return local_obs_all
+
     def apply_scale_clip_conf_from_pi_new(self, con_f):
 
         approx_mass = 26.0
@@ -508,9 +531,8 @@ class LaikagoConFEnvV4(gym.Env):
         #     a_idx=self.generator_past_act_t_idx
         # )
 
-        # TODO: calculate 4x split obs here
-        obs_w_dq = self.robot.get_robot_observation(with_vel=True)
-        g_obs_all = np.concatenate((obs_w_dq, b_cur_act))
+        # calculate 4x split obs here
+        g_obs_all = self.get_all_feet_local_obs(b_cur_act)
 
         return g_obs_all
 

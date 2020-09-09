@@ -39,6 +39,7 @@ from third_party.a2c_ppo_acktr.algo import gail
 from third_party.a2c_ppo_acktr.arguments import get_args
 from third_party.a2c_ppo_acktr.envs import make_vec_envs
 from third_party.a2c_ppo_acktr.model import Policy
+from third_party.a2c_ppo_acktr.model_split_pi import SplitPolicy
 from third_party.a2c_ppo_acktr.storage import RolloutStorage
 
 from gan import utils as gan_utils
@@ -79,10 +80,16 @@ def main():
                          args.gamma, args.log_dir, device, False, render=False, **extra_dict)
 
     if args.warm_start == '':
-        actor_critic = Policy(
-            envs.observation_space.shape,
-            envs.action_space,
-            base_kwargs={'recurrent': args.recurrent_policy, 'hidden_size': args.hidden_size})
+        if args.use_split_pi:
+            actor_critic = SplitPolicy(
+                envs.observation_space.shape,
+                envs.action_space,
+                base_kwargs={'hidden_size': args.hidden_size})
+        else:
+            actor_critic = Policy(
+                envs.observation_space.shape,
+                envs.action_space,
+                base_kwargs={'recurrent': args.recurrent_policy, 'hidden_size': args.hidden_size})
         actor_critic.to(device)
     else:
         # TODO: assume no state normalize ob_rms
@@ -152,10 +159,14 @@ def main():
     a_dim = expert_sas_w_past[-2].shape[1]
 
     # TODO: hardcoded here
-    s_idx = np.array([0, 3])
-    a_idx = np.array([0, 3])
-    # s_idx = np.array([0])
-    # a_idx = np.array([0])
+    # s_idx = np.array([0, 3])
+    # a_idx = np.array([0, 3])
+    s_idx = np.array([0])
+    a_idx = np.array([0])
+    # s_idx = np.array([0, 4, 8])
+    # a_idx = np.array([0, 4, 8])
+    # s_idx = np.array([8])
+    # a_idx = np.array([0, 4, 8])
 
     info_length = len(s_idx) * s_dim + len(a_idx) * a_dim + s_dim       # last term s_t+1
     discr = gail.Discriminator(
@@ -270,6 +281,9 @@ def main():
                     rollouts.obs_feat[step + 1], args.gamma,
                     rollouts.masks[step], offset=-r_sa
                 )
+
+            # print(rollouts.obs[step, 0])
+            # print(rollouts.obs_feat[step+1, 0])
 
             # redo reward normalize after overwriting
             # print(rollouts.rewards[step], returns)

@@ -133,6 +133,26 @@ class DiagGaussianNew(nn.Module):
         return FixedNormal(action_mean, action_logstd.exp())
 
 
+class PlainDiagGaussian(nn.Module):
+    def __init__(self, num_outputs):
+        super(PlainDiagGaussian, self).__init__()
+
+        # decrase init logstd?
+        self.logstd = AddBias(torch.ones(num_outputs) * -1.0)
+
+    def reset_variance(self, num_outputs, log_std):
+        self.logstd = AddBias(torch.ones(num_outputs) * log_std)
+
+    def forward(self, action_mean):
+        #  An ugly hack for my KFAC implementation.
+        zeros = torch.zeros(action_mean.size())
+        if action_mean.is_cuda:
+            zeros = zeros.cuda()
+
+        action_logstd = self.logstd(zeros)
+        return FixedNormal(action_mean, action_logstd.exp())
+
+
 class Bernoulli(nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(Bernoulli, self).__init__()

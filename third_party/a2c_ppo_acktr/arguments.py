@@ -213,6 +213,11 @@ def get_args():
         type=float,
         default=100,
         help='gail demonstrations average episode length')
+    parser.add_argument(
+        '--use-split-pi',
+        action='store_true',
+        default=False,
+        help='use split pi')
 
     args, extra_dict = parse_args_with_unknown(parser)
 

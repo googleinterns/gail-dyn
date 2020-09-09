@@ -179,6 +179,7 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-
 --use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_53 --seed 20053 \
 --act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.35  \
 --dq_pen_weight 0.001
+# good behavior pi.
 
 python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
 --num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
@@ -193,3 +194,57 @@ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-
    --seed 1099 --enlarge_act_range 0.35 --act_noise 0 --obs_noise 0 --soft_floor_env 0 \
    --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001 \
    --low-power-env 1 --save-traj 1 --save-path "./laika_53_lowpower_n200.pkl"
+
+
+
+09-02 19:37 revert a bit
+# train a behavior with # B: self.behavior_past_obs_t_idx = [0]
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_55 --seed 20055 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.35  \
+--dq_pen_weight 0.001
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_56 --seed 20056 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.3  \
+--dq_pen_weight 0.001
+
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_57 --seed 20057 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.3  \
+--dq_pen_weight 0.0007
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_58 --seed 20058 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.0 --q_pen_weight 0.3  \
+--dq_pen_weight 0.0007
+
+# revert to clip from tanh
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_59 --seed 20059 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.3  \
+--dq_pen_weight 0.0007
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoBulletEnv-v4" --num-steps 1500  \
+--num-processes 8  --lr 3e-4 --entropy-coef 0 --ppo-epoch 10 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay   --clip-param 0.2 --save-dir trained_models_laika_bullet_60 --seed 20060 \
+--act_noise 1 --obs_noise 1   --max_tar_vel 2.5  --energy_weight 0.1 --ab 4.5 --q_pen_weight 0.3  \
+--dq_pen_weight 0.0007
+
+# collect data for 57 low
+python -m third_party.a2c_ppo_acktr.collect_tarsim_traj --env-name "LaikagoBulletEnv-v4" \
+  --load-dir trained_models_laika_bullet_57/ppo --render 0  --non-det 1    --seed 1099 --enlarge_act_range 0.3 \
+  --act_noise 0 --obs_noise 0 --soft_floor_env 0    --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4 \
+   --dq_pen_weight 0.001    --low-power-env 1 --save-traj 0 --save-path "./laika_57_lowpower_n200.pkl"
+
+# collect old data for 57 low
+python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoBulletEnv-v4"  --load-dir trained_models_laika_bullet_60/ppo \
+--render 0  --non-det 1  --load-dis 0 --seed 1099 --enlarge_act_range 0.3 --act_noise 0 --obs_noise 0 \
+--soft_floor_env 0 --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001 \
+--low-power-env 1 --save-traj 0 --save-path "./laika_60_lowpower_n200_oldv2_20Nm.pkl"

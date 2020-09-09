@@ -591,6 +591,46 @@ ave 0.38
 ave 0.40
 
 
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v3" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_48_softfloor_n200_wos.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft48gt_3 --seed 51003 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_48/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v3" --hidden_size 200  --enlarge_act_range 0.25 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 100 --gail-tar-length 120
+
+
+ # try to change action clip from 2 back to 4
+  python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v3" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_48_softfloor_n200_wos.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft48gt_4 --seed 51004 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_48/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v3" --hidden_size 200  --enlarge_act_range 0.25 --cuda_env 0 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 100 --gail-tar-length 120
+
+
+ # try to change action clip from 2 back to 4, again
+  python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v3" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_48_softfloor_n200_wos.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft48gt_5 --seed 51005 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_48/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v3" --hidden_size 200  --enlarge_act_range 0.25 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 100 --gail-tar-length 120
+ # try to change action clip from 2 back to 3
+  python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v3" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path "./laika_48_softfloor_n200_wos.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_soft48gt_6 --seed 51006 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_48/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v3" --hidden_size 200  --enlarge_act_range 0.25 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 100 --gail-tar-length 120
+
 08-30 17:32
 .apply_scale_clip_conf_from_pi_new
   python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoConFEnv-v3" \
@@ -650,16 +690,6 @@ python -m third_party.a2c_ppo_acktr.enjoy --env-name "LaikagoConFEnv-v3" \
 
 
 
-   python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoConFEnv-v3" \
---num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
---num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
---gail --gail-dyn --gail-traj-path "./laika_48_softfloor_n200_wos.pkl" \
---save-dir trained_models_Gdyn_laika_bullet_soft48gt_new3_tmp --seed 51013 --gail-traj-num 199 --train_dyn 1 \
---gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_48/ppo" \
---behavior_env_name "LaikagoBulletEnv-v3" --hidden_size 100  --enlarge_act_range 0.25 --cuda_env 0 \
---gail_downsample_frequency 1 --gamma 0.99 --gail-dis-hdim 100 --gail-tar-length 120
-
-
 09-02 15:25
 # actf v4 init
 # D
@@ -677,3 +707,127 @@ python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv
 --gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_53/ppo" \
 --behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.35 --cuda_env 1 --gail_downsample_frequency 1 \
 --gamma 0.99 --gail-tar-length 100
+
+# test:
+python -m third_party.a2c_ppo_acktr.collect_tarsim_traj --env-name "LaikagoActFEnv-v4" \
+   --load-dir trained_models_Gdyn_laika_bullet_low53gt/ppo --render 1 --non-det 1 --train_dyn 1 \
+      --behavior_dir trained_models_laika_bullet_53/ppo --behavior_env_name "LaikagoBulletEnv-v4" --save-traj 0   \
+      --seed 109  --enlarge_act_range 0.35 --act_noise 0 --obs_noise 0 --pretrain_dyn 0 --cuda-env 0
+
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v4" --save-interval 5 --log-interval 5 \
+--num-steps 1000 --num-processes 8 --lr 1.5e-4 --entropy-coef 0 --ppo-epoch 4 --entropy-coef 0.00 \
+--num-mini-batch 16 --num-env-steps 1000000 --use-linear-lr-decay --clip-param 0.1 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_low53gt/ppo \
+--save-dir trained_models_laika_bullet_53_low_FTGAIL --seed 51700  \
+--warm-start "./trained_models_laika_bullet_53/ppo/LaikagoBulletEnv-v4.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 610 --warm-start-logstd -1.0
+
+python -m third_party.a2c_ppo_acktr.collect_tarsim_traj --env-name "LaikagoBulletEnv-v4" \
+  --load-dir trained_models_laika_bullet_53_low_FTGAIL/ppo --render 1  --non-det 0   \
+   --seed 1099 --enlarge_act_range 0. --act_noise 0 --obs_noise 0 --soft_floor_env 0  \
+     --max_tar_vel 2.5  --energy_weight 0.1 --ab 5.0 --q_pen_weight 0.4  --dq_pen_weight 0.001 \
+        --low-power-env 1 --save-traj 0 --save-path "./laika_53_lowpower_n200.pkl" --src-env-name "LaikagoActFEnv-v4"
+
+09-02 16:04
+# G/D hiddensize 200 --gail-batch-size 512(fewer updates) --gail-epoch 2
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_53_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low53gt_2 --seed 52001 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 2 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_53/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.35 --cuda_env 0 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 100 --hidden-size 200 --gail-dis-hdim 200 --gail-batch-size 512
+
+
+09-02 18:59
+# try again
+python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v4" --save-interval 5 --log-interval 5 \
+--num-steps 1000 --num-processes 8 --lr 2e-4 --entropy-coef 0 --ppo-epoch 10 --entropy-coef 0.00 \
+--num-mini-batch 16 --num-env-steps 2000000 --use-linear-lr-decay --clip-param 0.2 \
+--train_dyn 0  --dyn_dir  trained_models_Gdyn_laika_bullet_low53gt/ppo \
+--save-dir trained_models_laika_bullet_53_low_FTGAIL_2 --seed 51701  \
+--warm-start "./trained_models_laika_bullet_53/ppo/LaikagoBulletEnv-v4.pt" \
+--act_noise 0 --obs_noise 0 --enlarge_act_range 0 --dyn-iter 610 --warm-start-logstd -1.0
+# 60/70 seems better...
+
+# TODO: need a graph showing this two curves... (train/test reward)
+
+
+09-03 00:38
+# B: self.behavior_past_obs_t_idx = [0] 57
+# D
+    s_idx = np.array([0])
+    a_idx = np.array([0])
+# G
+        self.generator_past_obs_t_idx = [0, 1]
+        self.generator_past_act_t_idx = [0, 1]
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.01 --num-mini-batch 16 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_57_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low57gt --seed 52010 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_57/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.3 --cuda_env 1 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 120
+
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.005 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_57_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low57gt_2 --seed 52011 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_57/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.3 --cuda_env 0 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 120
+
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.005 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_57_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low57gt_3 --seed 52012 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_57/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.3 --cuda_env 0 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 120 --hidden-size 128
+
+09-03 10:55
+# D
+    s_idx = np.array([0, 4, 8])
+    a_idx = np.array([0, 4, 8])
+# G
+        self.generator_past_obs_t_idx = [0, 1]
+        self.generator_past_act_t_idx = [0, 1]
+# --entropy-coef 0.005 --num-mini-batch 32
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.005 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_57_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low57gt_4 --seed 52014 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_57/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.3 --cuda_env 1 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 120
+
+# D
+    s_idx = np.array([8])
+    a_idx = np.array([0, 4, 8])
+# G
+        self.generator_past_obs_t_idx = [0, 1]
+        self.generator_past_act_t_idx = [0, 1]
+
+python -m third_party.a2c_ppo_acktr.main_gail_dyn_ppo --env-name "LaikagoActFEnv-v4" --num-steps 1000 \
+--num-processes 8 --lr 3e-4 --entropy-coef 0.005 --num-mini-batch 32 --num-env-steps 10000000 \
+--use-linear-lr-decay --gail-traj-path "./laika_57_lowpower_n200.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low57gt_5 --seed 52015 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_57/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --enlarge_act_range 0.3 --cuda_env 1 --gail_downsample_frequency 1 \
+--gamma 0.99 --gail-tar-length 120
+
+
+0904 11:40
+# old actf env with new behavior policy
+# still use v2 code, the difference seems to be only contact force(V3) & tanh(V4)
+# 57 only uses current q as obs
+#         self.feat_select_func = LaikagoBulletEnvV3.feature_selection_G2BD_laika_v3
+# 57 probably bad..
+ python -m third_party.a2c_ppo_acktr.main --env-name "LaikagoActFEnv-v2" \
+--num-steps 1000 --num-processes 8 --lr 3e-4 --entropy-coef 0.01 \
+--num-mini-batch 16 --num-env-steps 10000000 --use-linear-lr-decay \
+--gail --gail-dyn --gail-traj-path  "./laika_60_lowpower_n200_oldv2_20Nm.pkl" \
+--save-dir trained_models_Gdyn_laika_bullet_low60gt_v2 --seed 52100 --gail-traj-num 199 --train_dyn 1 \
+--gail-epoch 5 --act_noise 0 --obs_noise 0 --behavior-dir "trained_models_laika_bullet_60/ppo" \
+--behavior_env_name "LaikagoBulletEnv-v4" --hidden_size 100  --enlarge_act_range 0.3 --cuda_env 1 \
+--gail_downsample_frequency 1 --gamma 0.99

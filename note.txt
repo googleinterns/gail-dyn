@@ -537,4 +537,10 @@ What is the best way to provide data to Dis?
 
 # TODO: with the new action space for conf, maybe add 1,0 contact bit back..
 
+# TODO: is it normal that I need to tune D training so that ....
 
+Things to change for 4x small net:
+(Issue: might be difficult to train... might need small init)
+# only G input changes,
+# B and D input same as v3
+# TODO: handle tanh of env_action..
